@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Urine Color Matrix (Lightness × Hue)</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    padding: 16px;
+    font-size: 16pt; /* consistent with previous step */
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 940px;
+    table-layout: fixed;
+  }
+
+  /* General table cell style */
+  th, td {
+    text-align: center;
+    font-weight: 600;
+    padding: 56px 10px;
+    vertical-align: middle;
+    font-size: 16pt;
+  }
+
+  /* Header cells keep borders */
+  th {
+    border: 1px solid #ccc;
+    background: #f7f7f7;
+    color: #333;
+  }
+
+  /* Remove borders from data cells */
+  td {
+    border: none;
+  }
+
+  .small {
+    font-weight: 500;
+    font-size: 14pt;
+    display: block;
+    opacity: 0.9;
+  }
+</style>
+</head>
+<body>
+
+<h2>Urine Color Matrix (Lightness × Hue)</h2>
+<p style="margin-top:-8px;color:#555;font-size:14pt;">
+Illustrative only; monitor/lighting can affect appearance.
+</p>
+
+<table aria-label="Urine color matrix with lightness rows and hue columns">
+  <tr>
+    <th>Lightness ↓ / Hue →</th>
+    <th>Yellow<br><span class="small">Typical urobilin</span></th>
+    <th>Orange / Brown<br><span class="small">Bilirubin, meds, bile</span></th>
+    <th>Red / Pink<br><span class="small">Blood, beets, porphyria</span></th>
+    <th>Green / Blue<br><span class="small">Dyes, meds, rare infection</span></th>
+    <th>Cloudy / Milky<br><span class="small">Crystals, pus, infection</span></th>
+  </tr>
+
+  <!-- Pale row -->
+  <tr>
+    <th>Pale</th>
+    <td style="background:#fffbe6;color:#333;">Yellow – Pale<br><span class="small">Well-hydrated</span></td>
+    <td style="background:#ffe9d6;color:#333;">Orange/Brown – Pale<br><span class="small">Check cause</span></td>
+    <td style="background:#ffe5e9;color:#333;">Red/Pink – Pale<br><span class="small">Food vs blood?</span></td>
+    <td style="background:#e6fff9;color:#333;">Green/Blue – Pale<br><span class="small">Usually pharmacologic</span></td>
+    <td style="background:#f6f6f6;color:#333;">Cloudy – Pale<br><span class="small">Sediment?</span></td>
+  </tr>
+
+  <!-- Light row -->
+  <tr>
+    <th>Light</th>
+    <td style="background:#fff3b0;color:#333;">Yellow – Light<br><span class="small">Normal</span></td>
+    <td style="background:#ffc58a;color:#333;">Orange/Brown – Light<br><span class="small">Consider labs</span></td>
+    <td style="background:#ffb3c1;color:#333;">Red/Pink – Light<br><span class="small">Test if unsure</span></td>
+    <td style="background:#b2f5ea;color:#333;">Green/Blue – Light<br><span class="small">Review meds</span></td>
+    <td style="background:#eaeaea;color:#333;">Cloudy – Light<br><span class="small">Consider UA</span></td>
+  </tr>
+
+  <!-- Medium row -->
+  <tr>
+    <th>Medium</th>
+    <td style="background:#ffd95e;color:#333;">Yellow – Medium<br><span class="small">Mild dehydration</span></td>
+    <td style="background:#ff9f50;color:#333;">Orange/Brown – Medium<br><span class="small">Not hydration</span></td>
+    <td style="background:#ff7b8a;color:#333;">Red/Pink – Medium<br><span class="small">Needs evaluation</span></td>
+    <td style="background:#68d8d6;color:#333;">Green/Blue – Medium<br><span class="small">Uncommon</span></td>
+    <td style="background:#d5d5d5;color:#333;">Cloudy – Medium<br><span class="small">Possible infection</span></td>
+  </tr>
+
+  <!-- Dark row -->
+  <tr>
+    <th>Dark</th>
+    <td style="background:#f4b400;color:#000;">Yellow – Dark<br><span class="small">Concentrated</span></td>
+    <td style="background:#c46c2b;color:#fff;">Orange/Brown – Dark<br><span class="small">Evaluate</span></td>
+    <td style="background:#d94a5b;color:#fff;">Red/Pink – Dark<br><span class="small">Seek care</span></td>
+    <td style="background:#2aa1a1;color:#fff;">Green/Blue – Dark<br><span class="small">Evaluate</span></td>
+    <td style="background:#b0b0b0;color:#fff;">Cloudy – Dark<br><span class="small">Evaluate</span></td>
+  </tr>
+
+  <!-- Very Dark row -->
+  <tr>
+    <th>Very Dark</th>
+    <td style="background:#c38e00;color:#fff;">Yellow – Very Dark<br><span class="small">Dehydrated</span></td>
+    <td style="background:#8b4513;color:#fff;">Orange/Brown – Very Dark<br><span class="small">Urgent if persistent</span></td>
+    <td style="background:#8b0000;color:#fff;">Red/Pink – Very Dark<br><span class="small">Urgent</span></td>
+    <td style="background:#0b6466;color:#fff;">Green/Blue – Very Dark<br><span class="small">Check causes</span></td>
+    <td style="background:#7a7a7a;color:#fff;">Cloudy – Very Dark<br><span class="small">Seek care</span></td>
+  </tr>
+</table>
+
+</body>
+</html>
