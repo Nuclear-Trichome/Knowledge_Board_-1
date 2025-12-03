@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<title>Drying guide 0</title>
+<meta name="Generator" content="Cocoa HTML Writer">
+<style type="text/css">
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 1rem;
+  }
+
+  .guide-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fafafa;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+
+  .guide-toolbar {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    z-index: 1;
+  }
+
+  .guide-toolbar span {
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+
+  .guide-zoom-btn {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: #fff;
+  }
+
+  .guide-zoom-btn:active {
+    transform: scale(0.97);
+  }
+
+  #guide-box {
+    font-size: 100%;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+</style>
+
+<script type="text/javascript">
+(function () {
+  var zoom = 1.0;
+  var minZoom = 0.8;
+  var maxZoom = 1.6;
+  var step = 0.1;
+  var box;
+
+  function applyZoom() {
+    if (!box) {
+      box = document.getElementById('guide-box');
+    }
+    if (!box) return;
+    box.style.fontSize = (zoom * 100) + '%';
+  }
+
+  window.guideZoomIn = function () {
+    if (zoom < maxZoom) {
+      zoom = Math.round((zoom + step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  window.guideZoomOut = function () {
+    if (zoom > minZoom) {
+      zoom = Math.round((zoom - step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', applyZoom, false);
+  } else {
+    window.attachEvent('onload', applyZoom);
+  }
+})();
+</script>
+</head>
+
+<body>
+<div class="guide-container">
+  <div class="guide-toolbar">
+    <span>Zoom:</span>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomOut()">A-</button>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomIn()">A+</button>
+  </div>
+
+  <pre id="guide-box">
+alkymistendenmark drying guide
+
+Dry cure
+
+* Don't wet trim, easiest way to guarantee a worse product and hay smell
+* Don't use a circulation fan, even if aimed away from the buds on lowest speed it will create turbulence drying the buds too fast. Another easy way to guarantee a worse product and hay smell.
+* Keep your exhaust fan running on a low speed, where you can still feel the air moving in the passive intake-port.
+* Simply maintain a controlled environment of 55-62% and ideally 15c 60f or as low as you can get it until everything is dry and crisp for 10-14 days and don't RUSH to jars like many promote, instead keep the environment in the drying room at all costs and you can let them be there for extended time with higher humidity (58-62%) towards the end to retain moisture which is safer. Later once you have routine and experience target 9-11 days as a maximum drying time to minimize chances of mold or weed going bad from the inside-out. You can achieve this by running lower humidity (40% minimum) the first 2 days and shed the initial moisture as well as run an overall lower humidity (minimum 55%) for the first 5 days until it crisps up.
+* If you don't have a humidifier; You can hang many wet towels outside near the intake (drying rack) and rewet them and change them out so they don't get sour or get mold from extended time being wet. You can also hang a towel in bucket with water and hook a fan to a humidity automation relay like Sonoff TH10 for even better control.
+* If you are both whole-plant hanging and have low temp 15c 60f - 20c 68f drying environment I would recommend you to keep your RH a little lower during drying 56-58% for the majority, otherwise it can take over 14 days to dry which rises the chances of mold happening.
+* Remember trimming and feeling the bud in 58-65% ambient RH after its dry will always feel a bit "moist & spongy" and leaves on buds will still be flexible and tend to make you think it needs to dry more. Feeling it in 55-57% will always feel crisp and leaves should come off by touching and flicking. Remember this when trimming and pay attention to RH you are trimming in.
+* If you are insecure about when to jar it, try to enclose a few sample buds in tupperware (or small jars), while monitoring the RH doesn't climb above 60%. Sample taste-test a day later and the coming days to assess how it develops. Use this to improve/shorten your drying times and know when you can comfortably enclose buds in jars with no risks.
+* Personally I'm most comfortable with no higher than 58% RH upon initial jarring. Higher and you risk it going bad or mold slowly over time. Airtight environment is like a mold incubator just like Ed Rosenthal has said before. 60%+ is not that risky in drying with air around it, but it is absolutely ideal conditions for mold in airtight environment, especially if right after trimming when it still has unequal spots of moisture throughout the bud.
+
+After its settled in jars you can raise RH to ideal 62% with humidipacks and at that point the risk of mold or going bad is not present, its only when you initially jar freshly trimmed weed.
+
+* Don't use humidipacks from day 1, let them settle in jars for 1-3 days till they feel equally moist and crisp and don't feel "fresh" anymore.
+
+The buds will at this point have equal moisture throughout the bud and the stems inside will be more "rigid", easier to snap and feel less flexy and the outside might feel more "crisp" in texture. The bud will also grind better, albeit still sticking a little bit to the grinder, which will go away over the coming weeks.
+
+The humidipacks (*Boveda, Integraboost*) are not for curing they are for permanent storage, a well-known misconception they fail to address too often as a company but they have said it before... its buried knowledge tho.
+
+* Don't burp excessively when doing it this way, check on them daily, but don't burp them for long per day only open and leave them 5mins in a room with same 55%+ humidity, you should only need to do this 3-5 days to a week, then its done. You can add your humidipacks after this period and still need to occassionally refresh the air by popping the lids for a few minutes.
+* Cut branches off in the same length as much as possible to let them dry at an equal rate.
+* Containers should be stored cool at same temps as drying as low as 15c 60f that will retain the volatile terpenes as much as possible
+
+Even curing is overrated, if you don't have fire weed when you start it won't be more fire later the terps will just smooth out and be less harsh on your throat like hash that is aged becomes better as some of the harshest terps evaporate. Legends like Rust Brandon, Spartan Grown, WolverineGrown that have witnessed several hundred harvests and tried others weed also say the same exact thing; "*If it isn't good when dried it won't be better later*". Smell won't magically come back by magically keeping it in jars. Landing buds in jars at the right time is the most important final step regarding a succesful harvest - it will determine the quality of the outcome - just like the temperature and RH during drying itself.
+  </pre>
+</div>
+</body>
+</html>
