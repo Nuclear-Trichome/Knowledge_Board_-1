@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<title>Puffco Pivot Temperature Ladder</title>
+<meta name="Generator" content="Cocoa HTML Writer">
+<style type="text/css">
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 1rem;
+  }
+
+  .guide-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fafafa;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem 0.75rem;
+  }
+
+  .guide-toolbar {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    z-index: 1;
+  }
+
+  .guide-toolbar span {
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+
+  .guide-zoom-btn {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: #fff;
+  }
+
+  .guide-zoom-btn:active {
+    transform: scale(0.97);
+  }
+
+  #guide-box {
+    font-size: 100%;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+</style>
+
+<script type="text/javascript">
+(function () {
+  var zoom = 1.0;
+  var minZoom = 0.8;
+  var maxZoom = 1.6;
+  var step = 0.1;
+  var box;
+
+  function applyZoom() {
+    if (!box) {
+      box = document.getElementById('guide-box');
+    }
+    if (!box) return;
+    box.style.fontSize = (zoom * 100) + '%';
+  }
+
+  window.guideZoomIn = function () {
+    if (zoom < maxZoom) {
+      zoom = Math.round((zoom + step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  window.guideZoomOut = function () {
+    if (zoom > minZoom) {
+      zoom = Math.round((zoom - step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', applyZoom, false);
+  } else {
+    window.attachEvent('onload', applyZoom);
+  }
+})();
+</script>
+</head>
+
+<body>
+<div class="guide-container">
+  <div class="guide-toolbar">
+    <span>Zoom:</span>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomOut()">A-</button>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomIn()">A+</button>
+  </div>
+
+<pre id="guide-box">
+Puffco Pivot — Temperature Ladder (Lowest → Highest)
+====================================================
+
+NOTE ON BOOST:
+Each boost adds ~+18°F. Puffco suggests not boosting more than 4× per heat cycle.
+Boosting extends the session AND raises temperature.
+
+
+====================================================
+1. ULTRA-LOW (Hidden Blue Mode)
+   Access: Blue > start heat > 5 clicks
+   Estimated base temp range.
+
+Base ............. ~470–490°F
+Boost 1× ......... ~488–508°F
+Boost 2× ......... ~506–526°F
+Boost 3× ......... ~524–544°F
+Boost 4× ......... ~542–562°F
+
+
+====================================================
+2. LOW (Blue)
+   The lowest *official* temperature.
+
+Base ............. 500°F
+Boost 1× ......... 518°F
+Boost 2× ......... 536°F
+Boost 3× ......... 554°F
+Boost 4× ......... 572°F
+
+
+====================================================
+3. MEDIUM (Green)
+
+Base ............. 520°F
+Boost 1× ......... 538°F
+Boost 2× ......... 556°F
+Boost 3× ......... 574°F
+Boost 4× ......... 592°F
+
+
+====================================================
+4. HIGH (Red)
+
+Base ............. 540°F
+Boost 1× ......... 558°F
+Boost 2× ......... 576°F
+Boost 3× ......... 594°F
+Boost 4× ......... 612°F
+
+
+====================================================
+5. PEAK / MAX (White)
+
+Base ............. 585°F
+Boost 1× ......... 603°F
+Boost 2× ......... 621°F
+Boost 3× ......... 639°F
+Boost 4× ......... 657°F
+
+
+====================================================
+6. ULTRA-HIGH (Hidden White Mode)
+   Access: White > start heat > 5 clicks
+   Estimated base temp slightly above official max.
+
+Base ............. ~600°F
+Boost 1× ......... ~618°F
+Boost 2× ......... ~636°F
+Boost 3× ......... ~654°F
+Boost 4× ......... ~672°F
+
+
+====================================================
+Relative Order (Low → High)
+1. Ultra-Low Hidden
+2. Blue
+3. Green
+4. Red
+5. White
+6. Ultra-High Hidden
+====================================================
+</pre>
+
+</div>
+</body>
+</html>
