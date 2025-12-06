@@ -914,15 +914,31 @@ const BASE_HEIGHT = 2622;
 // S2 °F:  (338,862);(477,922)
 // S2 %RH: (984,861);(1071,922)
 const OCR_REGIONS = {
-  temp1: { x: 337, y: 446, w: 478 - 337, h: 508 - 446 },
-  rh1:   { x: 984, y: 863, w: 1070 - 984, h: 924 - 863 },
-  temp2: { x: 338, y: 862, w: 477 - 338, h: 922 - 862 },
-  rh2:   { x: 984, y: 861, w: 1071 - 984, h: 922 - 861 }
+  temp1: { x: 339, y: 439, w: 541 - 339, h: 517 - 439 },
+  rh1:   { x: 975, y: 445, w: 1132 - 975, h: 512 - 445 },
+
+  temp2: { x: 334, y: 860, w: 544 - 334, h: 933 - 860 },
+  rh2:   { x: 977, y: 859, w: 1137 - 977, h: 928 - 859 }
 };
 
 function ocrExtractNumber(text) {
-  const m = String(text).replace(',', '.').match(/(\d+(\.\d+)?)/);
-  return m ? parseFloat(m[1]) : NaN;
+  if (!text) return NaN;
+
+  // Normalize text
+  let t = text
+    .replace(/,/g, ".")        // Allow comma decimal
+    .replace(/[º°]/g, "")      // Remove degree symbol
+    .replace(/[Ff]/g, "")      // Remove 'F'
+    .replace(/%/g, "")         // Remove '%'
+    .replace(/[^0-9.]/g, "");  // Keep digits + decimal
+
+  // Only use first decimal point
+  const parts = t.split(".");
+  if (parts.length > 2) {
+    t = parts[0] + "." + parts[1];  
+  }
+
+  return parseFloat(t);
 }
 
 async function ocrCrop(img, region, scaleX, scaleY) {
@@ -1009,6 +1025,7 @@ S2 RH:   ${JSON.stringify(h2Txt)}
         let rh1   = sanitizeRH(ocrExtractNumber(h1Txt));
         let temp2 = sanitizeTemp(ocrExtractNumber(t2Txt));
         let rh2   = sanitizeRH(ocrExtractNumber(h2Txt));
+
 
 
         document.getElementById('temp1').value = isNaN(temp1) ? '' : temp1.toFixed(1);
@@ -1134,38 +1151,38 @@ document.addEventListener("DOMContentLoaded", () => {
 function sanitizeTemp(val) {
   if (isNaN(val) || val <= 0) return NaN;
 
-  // Convert to string for pattern work
-  let s = String(val).replace(/[^\d.]/g, "");
+  let s = String(val).replace(/[^\d]/g, "");
 
-  // If Tesseract merged digits: "730" -> treat as "73.0"
-  if (s.length === 3 && !s.includes(".")) {
-    s = s.slice(0, 2) + "." + s.slice(2);
+  if (s.length === 1) return parseFloat(s);
+  if (s.length === 2) return parseFloat(s);
+
+  // 3-digit: 732 → 73.2
+  if (s.length === 3) {
+    return parseFloat(`${s[0]}${s[1]}.${s[2]}`);
   }
 
-  // If too long, trim to first 4 characters
-  if (s.length > 4) {
-    s = s.slice(0, 4);
+  // 4-digit patterns like 7392 → 73.2
+  //  last digit is correct decimal, 3rd digit is noise
+  if (s.length === 4) {
+    return parseFloat(`${s[0]}${s[1]}.${s[3]}`);
   }
 
-  let num = parseFloat(s);
-  if (num < 30 || num > 120) return NaN; // Safety: Typical indoor °F range
-  return num;
+  // Reject >4 digits as invalid
+  return NaN;
 }
 
 // Fix humidity OCR errors like "520", "052"
 function sanitizeRH(val) {
   if (isNaN(val) || val < 0) return NaN;
 
-  let s = String(val).replace(/[^\d.]/g, "");
+  let s = String(val).replace(/[^\d]/g, "");
 
-  // RH should not exceed 100
-  if (s.length > 2 && !s.includes(".")) {
-    s = s.slice(0, 2);
-  }
+  // 0–2 digits are valid directly
+  if (s.length <= 2) return parseFloat(s);
 
-  let num = parseFloat(s);
-  if (num < 0 || num > 100) return NaN;
-  return num;
+  // 3+ digits: take the FIRST two digits
+  // Example: "552" → "55"
+  return parseFloat(s.slice(0, 2));
 }
 
 
