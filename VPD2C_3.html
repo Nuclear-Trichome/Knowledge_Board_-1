@@ -1,0 +1,1116 @@
+<html lang="en" data-theme="dark"><head>
+  <meta charset="UTF-8">
+  <title>Dual VPD Calculator + Sensor Log CSV (OLED Green Mode)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* ============ THEME VARIABLES ============ */
+    :root {
+      --bg-color: #eef7f3;
+      --text-color: #333333;
+      --heading-color: #2b7a78;
+      --card-bg-color: #ffffff;
+      --muted-bg: #f4f4f4;
+      --border-color: #cccccc;
+      --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      --accent: #3fb68b;
+      --accent-hover: #2b7a78;
+      --link-color: #0a7f2e;
+
+      /* Chart styling */
+      --chart-bg: #ffffff;
+      --grid-color: rgba(0, 0, 0, 0.1);
+      --chart-temp-color: #2f7ef4;  /* blue */
+      --chart-rh-color:   #1b9e4b;  /* green */
+      --chart-vpd-color:  #e23b3b;  /* red */
+    }
+
+    /* OLED Dark (Green) */
+    [data-theme="dark"] {
+      --bg-color: #000000;            /* pure black for OLED */
+      --text-color: #d8ffe9;          /* minty-off-white */
+      --heading-color: #7dffb6;       /* bright green heading */
+      --card-bg-color: #00140e;       /* deep greenish black */
+      --muted-bg: #001a13;
+      --border-color: #0a5038;
+      --shadow: none;
+      --accent: #00e676;              /* neon-ish green */
+      --accent-hover: #00c46a;
+      --link-color: #58ffa8;
+
+      --chart-bg: #000000;            /* chart background also pure black */
+      --grid-color: rgba(255, 255, 255, 0.12);
+      --chart-temp-color: #82b1ff;    /* lighter blue */
+      --chart-rh-color:   #00e676;    /* neon green */
+      --chart-vpd-color:  #ff6e6e;    /* bright red */
+    }
+
+    /* ============ BASE ============ */
+    html, body {
+      height: 100%;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 56px 20px 40px; /* leave room for topbar */
+    }
+
+    /* ============ TOPBAR ============ */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--card-bg-color);
+      box-shadow: var(--shadow);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--heading-color);
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .switch {
+      position: relative;
+      width: 56px;
+      height: 30px;
+      background: var(--muted-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .knob {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 24px; height: 24px;
+      background: var(--accent);
+      border-radius: 50%;
+      transition: transform .2s ease, background .2s ease;
+    }
+    .switch input:checked + .knob {
+      transform: translateX(26px);
+      background: var(--accent);
+    }
+    .toggle span {
+      color: var(--text-color);
+      font-size: 14px;
+    }
+
+    /* ============ LAYOUT ============ */
+    .container {
+      max-width: 700px;
+      margin: 20px auto 40px;
+      background: var(--card-bg-color);
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: var(--heading-color);
+      margin-bottom: 18px;
+      margin-top: 0;
+    }
+    h1.page-title {
+      display: none; /* header title handles page title */
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input[type="tel"],
+    input[type="number"],
+    textarea,
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 16px;
+      background: var(--muted-bg);
+      color: var(--text-color);
+    }
+
+    textarea {
+      height: 150px;
+      font-family: monospace;
+      font-size: 14px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px;
+      background-color: var(--accent);
+      color: #000; /* better contrast on neon green */
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    #result {
+      margin-top: 25px;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .vpd-low    { background-color: #c7f9ff; color: #007c91; }
+    .vpd-optimal{ background-color: #d4edda; color: #155724; }
+    .vpd-high   { background-color: #ffeeba; color: #856404; }
+    .vpd-danger { background-color: #f8d7da; color: #721c24; }
+
+    pre {
+      background: var(--muted-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      color: var(--text-color);
+    }
+
+    #copyBtn {
+      margin-top: 10px;
+    }
+
+    canvas {
+      max-width: 100%;
+      margin-top: 20px;
+      background: var(--chart-bg);
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    a#downloadLink {
+      display: inline-block;
+      margin: 15px 0;
+      color: var(--link-color);
+      text-decoration: underline;
+      cursor: pointer;
+	 }
+
+#vpdChart {
+  width: 100% !important;
+  height: 400px;
+	}
+
+/* ======== Moon Phase VPD Table ======== */
+.moon-vpd-box {
+  max-width: 700px;              /* match .container width */
+  margin: 20px auto 40px;        /* same vertical spacing */
+  background: var(--card-bg-color);
+  padding: 20px 0;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+
+#moonVpdTable {
+  width: 90%;                    /* fits neatly inside the box */
+  margin: 0 auto;
+  border-collapse: collapse;
+  table-layout: fixed;           /* equal-width columns */
+}
+
+#moonVpdTable td {
+  width: 50%;
+  height: 50px;
+  border: 1px solid var(--border-color);
+  font-size: 22px;
+  text-align: center;
+  vertical-align: middle;
+  background-color: var(--muted-bg);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+#moonVpdTable td.active {
+  background-color: #00c46a; /* OLED green highlight */
+  color: #000;
+  font-weight: bold;
+  box-shadow: 0 0 10px #00e676 inset;
+  border-color: #00e676;
+}
+  </style>
+</head>
+<body>
+  <!-- Top bar with OLED Green toggle -->
+  <div class="topbar">
+    <h1>Dual VPD + CSV Tools</h1>
+    <label class="toggle" title="Toggle OLED Green mode">
+      <span>🌙 OLED Green</span>
+      <div class="switch">
+        <input type="checkbox" id="themeToggle">
+        <div class="knob"></div>
+      </div>
+    </label>
+  </div>
+
+  <!-- Optional hidden page title (topbar shows it) -->
+  <h1 class="page-title">Dual VPD Calculator + Sensor Log CSV (OLED Green Mode)</h1>
+
+  <!-- Dual VPD Calculator -->
+  <div class="container">
+    <h2>Dual VPD Calculator 🌿</h2>
+    <label for="temp1">Temperature 1 (°F):</label>
+    <input type="tel" id="temp1" inputmode="decimal" pattern="[0-9.]*" autocomplete="off">
+    <label for="rh1">Humidity 1 (%):</label>
+    <input type="tel" id="rh1" inputmode="decimal" pattern="[0-9.]*" autocomplete="off">
+    <label for="temp2">Temperature 2 (°F):</label>
+    <input type="tel" id="temp2" inputmode="decimal" pattern="[0-9.]*" autocomplete="off">
+    <label for="rh2">Humidity 2 (%):</label>
+    <input type="tel" id="rh2" inputmode="decimal" pattern="[0-9.]*" autocomplete="off">
+    <button onclick="calculateVPD()">Calculate VPD</button>
+
+    <!-- Screenshot OCR Import -->
+    <div class="container">
+      <h2>📸 OCR Import from ThermoPro Screenshot</h2>
+
+      <!-- Clipboard & Drag-and-Drop Image Paste Box -->
+      <div id="pasteDropZone"
+          style="
+            border: 2px dashed var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+            background: var(--muted-bg);
+          ">
+        <p style="margin:0 0 10px 0; color:var(--text-color);">
+          📋 Paste an image (mobile supported), drag & drop, or upload below:
+        </p>
+
+        <!-- Hidden file input triggered by clicking the zone -->
+        <input type="file" id="pasteDropFileInput" accept="image/*" style="display:none;">
+
+        <button type="button"
+                onclick="document.getElementById('pasteDropFileInput').click();"
+                style="margin-top:10px;">
+          Choose Image
+        </button>
+      </div>
+
+
+      <label for="ssUpload">Upload Screenshot:</label>
+      <input type="file" id="ssUpload" accept="image/*">
+
+      <button id="runOcrBtn" type="button">Run OCR &amp; Fill Fields</button>
+      <div id="ocrStatus" style="margin-top:10px;font-size:14px;opacity:0.9;">
+        Waiting for screenshot…
+      </div>
+
+      <pre id="debugText"></pre>
+    </div>
+
+    <div id="result" class="vpd-optimal">🌡️ Avg Temp: <strong></strong><br>💧 Avg RH: <strong></strong><br>📊 VPD: <strong></strong></div>
+    <pre id="rawText"></pre>
+    <button id="copyBtn" onclick="copyRawText()">📋 Copy Raw Output</button>
+  </div>
+
+<div class="container" id="moonVpdBox">
+  <h2>🌑🌕 VPD Stage Map</h2>
+  <table id="moonVpdTable">
+    <tbody><tr><td>🌑</td><td class="active">☀️</td></tr>
+    <tr><td>🌘</td><td class="active">☀️</td></tr>
+    <tr><td class="active">🌗</td><td class="">☀️</td></tr>
+    <tr><td class="active">🌖</td><td class="">☀️</td></tr>
+    <tr><td class="active">🌕</td><td class="">☀️</td></tr>
+  </tbody></table>
+</div>
+
+  <!-- Sensor Log CSV Converter -->
+  <div class="container">
+    <h2>Sensor Log to CSV</h2>
+
+    <h3>Paste Text Log:</h3>
+    <textarea id="inputText" placeholder="Paste raw sensor log here..."></textarea>
+    <button onclick="processTextInput()">Convert Text Input</button>
+
+    <h3>Or Load from File:</h3>
+    <input type="file" id="fileInput" accept=".csv,.txt">
+    <button onclick="processFileInput()">Convert File Input</button>
+
+    <h3>Upload Two Sensor CSVs</h3>
+    <input type="file" id="sensor1File" accept=".csv">
+    <input type="file" id="sensor2File" accept=".csv">
+    <!-- Re-plots even without re-uploading -->
+    <button onclick="loadAndMerge()">Plot Combined VPD</button>
+
+    <a id="downloadLink" style="display:none;" download="cleaned_sensor_data.csv">Download Clean CSV</a>
+
+    <h3>Output Preview:</h3>
+    <pre id="outputPreview"></pre>
+
+    <h3>Combined Temp / RH / VPD Chart</h3>
+    <label for="chartTrim">Trim size (rows for chart):</label>
+    <input type="number" id="chartTrim" value="100" min="10" step="10">
+    <canvas id="vpdChart" height="300"></canvas>
+
+    <h3>Combined Data Output</h3>
+    <label for="outputTrim">Trim size (rows for output):</label>
+    <input type="number" id="outputTrim" value="100" min="10" step="10">
+    <button onclick="downloadCombinedText()">Download Combined Data</button>
+    <pre id="combinedDataOutput"></pre>
+
+    <h3>Advanced Combined Data Output</h3>
+    <button onclick="downloadAdvancedCombinedText()">Download Advanced Combined Data</button>
+    <pre id="advancedCombinedDataOutput"></pre>
+  </div>
+
+<!-- Plant Age Tracker -->
+<div class="container">
+  <h2>🌱 Plant Age Tracker</h2>
+  <label for="plantStartDate">Select Planting Date:</label>
+  <input type="date" id="plantStartDate">
+  <div id="plantAgeDisplay" style="margin-top:15px;font-size:18px;font-weight:bold;">🪴 Plant Age: Day 62</div>
+</div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+  <script>
+    /* ===================== THEME TOGGLING ===================== */
+    const THEME_KEY = 'theme-preference';
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem(THEME_KEY, theme);
+      refreshChartTheme(); // recolor live chart if present
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem(THEME_KEY) || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      const toggle = document.getElementById('themeToggle');
+      toggle.checked = (saved === 'dark');
+      toggle.addEventListener('change', () => {
+        setTheme(toggle.checked ? 'dark' : 'light');
+      });
+    }
+
+    // Helper to read CSS variables
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    /* ===================== VPD CALCULATOR ===================== */
+    function saveInputs() {
+      localStorage.setItem('temp1', document.getElementById('temp1').value);
+      localStorage.setItem('rh1', document.getElementById('rh1').value);
+      localStorage.setItem('temp2', document.getElementById('temp2').value);
+      localStorage.setItem('rh2', document.getElementById('rh2').value);
+    }
+    function loadInputs() {
+      document.getElementById('temp1').value = localStorage.getItem('temp1') || '';
+      document.getElementById('rh1').value = localStorage.getItem('rh1') || '';
+      document.getElementById('temp2').value = localStorage.getItem('temp2') || '';
+      document.getElementById('rh2').value = localStorage.getItem('rh2') || '';
+    }
+    function calculateVPD() {
+      const t1 = parseFloat(document.getElementById('temp1').value);
+      const rh1 = parseFloat(document.getElementById('rh1').value);
+      const t2 = parseFloat(document.getElementById('temp2').value);
+      const rh2 = parseFloat(document.getElementById('rh2').value);
+      if ([t1, rh1, t2, rh2].some(isNaN)) { alert("Please enter all four values."); return; }
+      saveInputs();
+      const tempAvg = (t1 + t2) / 2;
+      const rhAvg = (rh1 + rh2) / 2;
+      const tempC = (tempAvg - 32) * 5 / 9;
+      const es = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3));
+      const ea = es * (rhAvg / 100);
+      const vpd = es - ea;
+      const vpdRounded = vpd.toFixed(3);
+      const resultBox = document.getElementById('result');
+      resultBox.className = "";
+if (vpd < 0.8) {
+  // Too humid
+  resultBox.classList.add("vpd-low");
+
+} else if (vpd <= 1.35) {
+  // Optimal green
+  resultBox.classList.add("vpd-optimal");
+
+} else if (vpd <= 1.50) {
+  // High but STILL acceptable for late flower — lime green
+  resultBox.style.backgroundColor = "#ccff99";  // lime pastel green
+  resultBox.style.color = "#205b00";            // dark green text
+
+} else if (vpd <= 1.65) {
+  // Approaching real dry stress
+  resultBox.classList.add("vpd-high");
+
+} else {
+  // Dangerously high VPD
+  resultBox.classList.add("vpd-danger");
+}
+      resultBox.innerHTML =
+        `🌡️ Avg Temp: <strong>${tempAvg.toFixed(2)}°F</strong><br>` +
+        `💧 Avg RH: <strong>${rhAvg.toFixed(2)}%</strong><br>` +
+        `📊 VPD: <strong>${vpdRounded} kPa</strong>`;
+      document.getElementById('rawText').textContent =
+`Inputs:
+  Temp 1: ${t1.toFixed(2)} °F
+  RH 1:   ${rh1.toFixed(2)} %
+  Temp 2: ${t2.toFixed(2)} °F
+  RH 2:   ${rh2.toFixed(2)} %
+
+Averages:
+  Temp:   ${tempAvg.toFixed(2)} °F
+  RH:     ${rhAvg.toFixed(2)} %
+
+Calculated VPD:
+  ${vpdRounded} kPa`;
+
+updateMoonVpdTable(vpd, vpd);
+    }
+    function copyRawText() {
+      const rawText = document.getElementById('rawText').textContent;
+      navigator.clipboard.writeText(rawText).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = "✅ Copied!";
+        setTimeout(() => { btn.textContent = "📋 Copy Raw Output"; }, 1500);
+      });
+    }
+
+    /* ===================== CSV + CHART ===================== */
+    let lastSensor1CSV = null;
+    let lastSensor2CSV = null;
+
+    let allSensor1Data = [];
+    let allSensor2Data = [];
+
+    let currentSensor1Slice = [];
+    let currentSensor2Slice = [];
+    let globalCombinedData = [];
+
+    let chartInstance = null;
+
+    function calculateVPDcsv(tempF, rh) {
+      const tempC = (tempF - 32) * 5 / 9;
+      const es = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3)); // kPa
+      const ea = es * (rh / 100);
+      return es - ea; // kPa
+    }
+
+    function parseCSVContent(csv) {
+      const lines = csv.trim().split('\n');
+      return lines
+        .slice(1) // skip header
+        .map(line => line.replace(/^\uFEFF/, '').trim().split(','))
+        .filter(r => r.length === 4 && !isNaN(parseFloat(r[2])) && !isNaN(parseFloat(r[3])))
+        .map(r => ({
+          date: r[0].trim(),
+          time: r[1].trim(),
+          temp: parseFloat(r[2]),
+          rh: parseFloat(r[3])
+        }));
+    }
+
+    function getChartTrim() {
+      const n = parseInt(document.getElementById('chartTrim').value, 10);
+      return Number.isFinite(n) && n > 0 ? n : 100;
+    }
+    function getOutputTrim() {
+      const n = parseInt(document.getElementById('outputTrim').value, 10);
+      return Number.isFinite(n) && n > 0 ? n : 100;
+    }
+
+    function combineSeries(s1, s2) {
+      const combined = [];
+      const len = Math.min(s1.length, s2.length);
+      for (let i = 0; i < len; i++) {
+        const t = (s1[i].temp + s2[i].temp) / 2;
+        const rh = (s1[i].rh + s2[i].rh) / 2;
+        const vpd = calculateVPDcsv(t, rh);
+        combined.push({
+          timestamp: `${s1[i].date} ${s1[i].time}`,
+          temp: t.toFixed(2),
+          rh: rh.toFixed(2),
+          vpd: vpd.toFixed(3)
+        });
+      }
+      return combined;
+    }
+
+    function plotCombinedGraph(data) {
+      const ctx = document.getElementById('vpdChart').getContext('2d');
+
+      // Destroy previous chart if present
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+
+      const textColor = cssVar('--text-color');
+      const gridColor = cssVar('--grid-color');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(row => row.timestamp),
+          datasets: [
+            {
+              label: 'Avg Temp (°F)',
+              data: data.map(r => parseFloat(r.temp)),
+              borderColor: cssVar('--chart-temp-color'),
+              yAxisID: 'y1',
+              tension: 0.2
+            },
+            {
+              label: 'Avg Humidity (%)',
+              data: data.map(r => parseFloat(r.rh)),
+              borderColor: cssVar('--chart-rh-color'),
+              yAxisID: 'y1',
+              tension: 0.2
+            },
+            {
+              label: 'VPD (kPa)',
+              data: data.map(r => parseFloat(r.vpd)),
+              borderColor: cssVar('--chart-vpd-color'),
+              yAxisID: 'y2',
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: textColor }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: textColor },
+              grid: { color: gridColor }
+            },
+            y1: {
+              type: 'linear',
+              position: 'left',
+              ticks: { color: textColor },
+              grid: { color: gridColor },
+              title: { display: true, text: 'Temperature / Humidity', color: textColor }
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              ticks: { color: textColor },
+              grid: { drawOnChartArea: false, color: gridColor },
+              title: { display: true, text: 'VPD (kPa)', color: textColor }
+            }
+          }
+        }
+      });
+    }
+
+    // When theme changes, recolor chart without rebuilding data
+    function refreshChartTheme() {
+      if (!chartInstance) return;
+
+      const textColor = cssVar('--text-color');
+      const gridColor = cssVar('--grid-color');
+
+      chartInstance.options.plugins.legend.labels.color = textColor;
+
+      if (chartInstance.options.scales.x) {
+        chartInstance.options.scales.x.ticks.color = textColor;
+        chartInstance.options.scales.x.grid.color = gridColor;
+      }
+      chartInstance.options.scales.y1.ticks.color = textColor;
+      chartInstance.options.scales.y1.grid.color = gridColor;
+      chartInstance.options.scales.y1.title.color = textColor;
+
+      chartInstance.options.scales.y2.ticks.color = textColor;
+      chartInstance.options.scales.y2.grid.color = gridColor;
+      chartInstance.options.scales.y2.title.color = textColor;
+
+      // Update dataset line colors to theme vars
+      const colors = [
+        cssVar('--chart-temp-color'),
+        cssVar('--chart-rh-color'),
+        cssVar('--chart-vpd-color')
+      ];
+      chartInstance.data.datasets.forEach((ds, idx) => ds.borderColor = colors[idx]);
+
+      chartInstance.update();
+    }
+
+    function displayCombinedText(data) {
+      let output = 'Timestamp,Avg_Temp_F,Avg_Humidity_Percent,VPD_kPa\n';
+      data.forEach(row => {
+        output += `${row.timestamp},${row.temp},${row.rh},${row.vpd}\n`;
+      });
+      document.getElementById('combinedDataOutput').textContent = output;
+    }
+
+    function buildSlicesAndRender() {
+      if (!allSensor1Data.length || !allSensor2Data.length) {
+        alert("Please upload the two sensor files first.");
+        return;
+      }
+      const chartTrim = getChartTrim();
+      const outputTrim = getOutputTrim();
+
+      const len = Math.min(allSensor1Data.length, allSensor2Data.length);
+
+      // Slices for chart
+      const startChart = Math.max(0, len - chartTrim);
+      const s1Chart = allSensor1Data.slice(startChart);
+      const s2Chart = allSensor2Data.slice(startChart);
+      const combinedChart = combineSeries(s1Chart, s2Chart);
+
+      // Slices for output (download/preview)
+      const startOutput = Math.max(0, len - outputTrim);
+      currentSensor1Slice = allSensor1Data.slice(startOutput);
+      currentSensor2Slice = allSensor2Data.slice(startOutput);
+      globalCombinedData = combineSeries(currentSensor1Slice, currentSensor2Slice);
+
+      // Render
+      plotCombinedGraph(combinedChart);
+      displayCombinedText(globalCombinedData);
+    }
+
+    // Button handler: Ingest new files if chosen; otherwise re-plot from memory
+    function loadAndMerge() {
+      const f1 = document.getElementById('sensor1File').files[0];
+      const f2 = document.getElementById('sensor2File').files[0];
+
+      // Case 1: New files selected
+      if (f1 && f2) {
+        const reader1 = new FileReader();
+        const reader2 = new FileReader();
+
+        reader1.onload = (e1) => {
+          reader2.onload = (e2) => {
+            lastSensor1CSV = e1.target.result;
+            lastSensor2CSV = e2.target.result;
+            allSensor1Data = parseCSVContent(lastSensor1CSV);
+            allSensor2Data = parseCSVContent(lastSensor2CSV);
+            buildSlicesAndRender();
+          };
+          reader2.readAsText(f2, "utf-8");
+        };
+        reader1.readAsText(f1, "utf-8");
+        return;
+      }
+
+      // Case 2: Re-plot from existing arrays
+      if (allSensor1Data.length && allSensor2Data.length) {
+        buildSlicesAndRender();
+        return;
+      }
+
+      // Case 3: Try to re-parse from stored raw CSV (edge case)
+      if (lastSensor1CSV && lastSensor2CSV) {
+        allSensor1Data = parseCSVContent(lastSensor1CSV);
+        allSensor2Data = parseCSVContent(lastSensor2CSV);
+        buildSlicesAndRender();
+        return;
+      }
+
+      alert("Please upload both sensor CSV files first.");
+    }
+
+    function downloadCombinedText() {
+      if (!globalCombinedData.length) {
+        alert("No combined data available yet.");
+        return;
+      }
+      let csvContent = 'Timestamp,Avg_Temp_F,Avg_Humidity_Percent,VPD_kPa\n';
+      globalCombinedData.forEach(row => {
+        csvContent += `${row.timestamp},${row.temp},${row.rh},${row.vpd}\n`;
+      });
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "combined_sensor_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function downloadAdvancedCombinedText() {
+      if (!globalCombinedData.length || !currentSensor1Slice.length || !currentSensor2Slice.length) {
+        alert("No data available yet.");
+        return;
+      }
+      let csv = 'Timestamp,Sensor1_Temp_F,Sensor1_Humidity_%,Sensor2_Temp_F,Sensor2_Humidity_%,Avg_Temp_F,Avg_Humidity_%,VPD_kPa\n';
+      for (let i = 0; i < globalCombinedData.length; i++) {
+        const row = globalCombinedData[i];
+        const s1 = currentSensor1Slice[i];
+        const s2 = currentSensor2Slice[i];
+        csv += `${row.timestamp},${s1.temp.toFixed(2)},${s1.rh.toFixed(2)},${s2.temp.toFixed(2)},${s2.rh.toFixed(2)},${row.temp},${row.rh},${row.vpd}\n`;
+      }
+      document.getElementById("advancedCombinedDataOutput").textContent = csv;
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "advanced_combined_sensor_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    /* ===================== CSV CLEANER (unchanged behavior) ===================== */
+    function parseSensorLog(rawText) {
+      rawText = rawText.replace(/\r\n|\r|\n/g, '\n');
+      let lines = rawText
+        .split('\n')
+        .map(line => line.replace(/^\uFEFF/, '').trim())
+        .filter(line => line.length > 0);
+      if (lines[0] && lines[0].toLowerCase().includes("timestamp for")) {
+        lines.shift();
+      }
+      if (!lines[0] || !lines[0].toLowerCase().includes("temperature")) {
+        throw new Error("Missing valid CSV header");
+      }
+      const header = lines[0];
+      const data = lines.slice(1).filter(line => line.split(",").length === 4);
+      if (data.length === 0) throw new Error("No valid data rows found.");
+      const last100 = data.slice(-100);
+      return [header, ...last100];
+    }
+    function generateCSVAndPreview(cleanedLines) {
+      const csv = cleanedLines.join("\n");
+      document.getElementById("outputPreview").textContent = csv;
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.getElementById("downloadLink");
+      link.href = url;
+      link.style.display = "inline";
+      link.textContent = "Download Clean CSV";
+    }
+    function processTextInput() {
+      const rawText = document.getElementById("inputText").value;
+      try {
+        const cleaned = parseSensorLog(rawText);
+        generateCSVAndPreview(cleaned);
+      } catch (err) { alert("Error: " + err.message); }
+    }
+    function processFileInput() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) { alert("Please select a file."); return; }
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        try {
+          const rawText = event.target.result;
+          const cleaned = parseSensorLog(rawText);
+          generateCSVAndPreview(cleaned);
+        } catch (err) { alert("Error: " + err.message); }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    /* ===================== INIT ===================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      loadInputs();
+    });
+
+/* ===================== PLANT AGE TRACKER ===================== */
+const PLANT_DATE_KEY = 'plantStartDate';
+
+function savePlantDate(date) {
+  localStorage.setItem(PLANT_DATE_KEY, date);
+  updatePlantAge();
+}
+
+function loadPlantDate() {
+  const savedDate = localStorage.getItem(PLANT_DATE_KEY);
+  if (savedDate) {
+    document.getElementById('plantStartDate').value = savedDate;
+    updatePlantAge();
+  }
+}
+
+/* ===================== MOON PHASE VPD STAGE BOX ===================== */
+function updateMoonVpdTable(dayVpd, nightVpd) {
+  const table = document.getElementById("moonVpdTable");
+  if (!table) return;
+
+  // Define stage VPD ranges (day / night)
+  // Approximate optimal kPa targets by growth stage:
+  const stages = [
+    { moon: [0.4, 0.8], sun: [0.8, 1.0] },  // 🌑 Early Veg
+    { moon: [0.5, 0.9], sun: [0.9, 1.1] },  // 🌘 Mid Veg
+    { moon: [0.6, 1.0], sun: [1.0, 1.2] },  // 🌗 Early Flower
+    { moon: [0.7, 1.1], sun: [1.1, 1.3] },  // 🌖 Mid Flower
+    { moon: [0.8, 1.2], sun: [1.2, 1.5] }   // 🌕 Late Flower / Harvest
+  ];
+
+  const rows = table.querySelectorAll("tr");
+  rows.forEach((row, i) => {
+    const [moonCell, sunCell] = row.querySelectorAll("td");
+    moonCell.classList.remove("active");
+    sunCell.classList.remove("active");
+
+    // Night VPD match
+    if (nightVpd >= stages[i].moon[0] && nightVpd <= stages[i].moon[1]) {
+      moonCell.classList.add("active");
+    }
+    // Day VPD match
+    if (dayVpd >= stages[i].sun[0] && dayVpd <= stages[i].sun[1]) {
+      sunCell.classList.add("active");
+    }
+  });
+}
+
+function updatePlantAge() {
+  const dateStr = document.getElementById('plantStartDate').value;
+  if (!dateStr) {
+    document.getElementById('plantAgeDisplay').textContent = "No planting date set.";
+    return;
+  }
+  const startDate = new Date(dateStr);
+  const today = new Date();
+  const diffTime = today - startDate;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  document.getElementById('plantAgeDisplay').textContent = `🪴 Plant Age: Day ${diffDays}`;
+}
+
+/* ===================== SCREENSHOT OCR ENGINE ===================== */
+
+const BASE_WIDTH = 1206;
+const BASE_HEIGHT = 2622;
+
+// Provided bounding boxes (top-left, bottom-right):
+// S1 °F:  (337,446);(478,508)
+// S1 %RH: (984,863);(1070,924)
+// S2 °F:  (338,862);(477,922)
+// S2 %RH: (984,861);(1071,922)
+const OCR_REGIONS = {
+  temp1: { x: 337, y: 446, w: 478 - 337, h: 508 - 446 },
+  rh1:   { x: 984, y: 863, w: 1070 - 984, h: 924 - 863 },
+  temp2: { x: 338, y: 862, w: 477 - 338, h: 922 - 862 },
+  rh2:   { x: 984, y: 861, w: 1071 - 984, h: 922 - 861 }
+};
+
+function ocrExtractNumber(text) {
+  const m = String(text).replace(',', '.').match(/(\d+(\.\d+)?)/);
+  return m ? parseFloat(m[1]) : NaN;
+}
+
+async function ocrCrop(img, region, scaleX, scaleY) {
+  const canvas = document.createElement('canvas');
+  const w = Math.round(region.w * scaleX);
+  const h = Math.round(region.h * scaleY);
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(
+    img,
+    region.x * scaleX,
+    region.y * scaleY,
+    region.w * scaleX,
+    region.h * scaleY,
+    0, 0, w, h
+  );
+
+  const result = await Tesseract.recognize(canvas, 'eng', {
+    tessedit_char_whitelist: '0123456789.%°F',
+  });
+
+  return result.data.text;
+}
+
+async function runScreenshotOCR(file) {
+  const status = document.getElementById('ocrStatus');
+  const debug = document.getElementById('debugText');
+
+  status.textContent = "Loading image…";
+  debug.textContent = "";
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+
+    img.onload = async () => {
+      try {
+        const scaleX = img.width / BASE_WIDTH;
+        const scaleY = img.height / BASE_HEIGHT;
+
+        status.textContent = `Image loaded (${img.width}×${img.height}). Running OCR…`;
+
+        // Run OCR for all 4 fields
+        const [t1Txt, h1Txt, t2Txt, h2Txt] = await Promise.all([
+          ocrCrop(img, OCR_REGIONS.temp1, scaleX, scaleY),
+          ocrCrop(img, OCR_REGIONS.rh1,   scaleX, scaleY),
+          ocrCrop(img, OCR_REGIONS.temp2, scaleX, scaleY),
+          ocrCrop(img, OCR_REGIONS.rh2,   scaleX, scaleY)
+        ]);
+
+        debug.textContent =
+`Raw OCR:
+S1 Temp: ${JSON.stringify(t1Txt)}
+S1 RH:   ${JSON.stringify(h1Txt)}
+S2 Temp: ${JSON.stringify(t2Txt)}
+S2 RH:   ${JSON.stringify(h2Txt)}
+`;
+
+        const temp1 = ocrExtractNumber(t1Txt);
+        const rh1   = ocrExtractNumber(h1Txt);
+        const temp2 = ocrExtractNumber(t2Txt);
+        const rh2   = ocrExtractNumber(h2Txt);
+
+        document.getElementById('temp1').value = isNaN(temp1) ? '' : temp1.toFixed(1);
+        document.getElementById('rh1').value   = isNaN(rh1)   ? '' : rh1.toFixed(1);
+        document.getElementById('temp2').value = isNaN(temp2) ? '' : temp2.toFixed(1);
+        document.getElementById('rh2').value   = isNaN(rh2)   ? '' : rh2.toFixed(1);
+
+        status.textContent = "OCR complete. Values updated.";
+
+        // Auto-calc once fields are filled
+        calculateVPD();
+
+        resolve();
+      } catch (err) {
+        console.error(err);
+        status.textContent = "OCR error: " + err.message;
+        reject(err);
+      }
+    };
+
+    img.onerror = () => {
+      status.textContent = "Could not load image.";
+      reject(new Error("Image load failed"));
+    };
+
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// Hook up the OCR button
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById('runOcrBtn');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      const fileInput = document.getElementById('ssUpload');
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        document.getElementById('ocrStatus').textContent = "Please upload a screenshot first.";
+        return;
+      }
+
+      btn.disabled = true;
+      try {
+        await runScreenshotOCR(file);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+});
+
+/* ==========================
+   CLIPBOARD + DRAG/DROP IMPORT
+   ========================== */
+
+function handleImageFileForOCR(file) {
+  if (!file) return;
+  document.getElementById("ssUpload").files = createFileList(file);
+  runScreenshotOCR(file);
+}
+
+// Utility: create a FileList from a single File
+function createFileList(file) {
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  return dt.files;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const zone = document.getElementById("pasteDropZone");
+  const fileInput = document.getElementById("pasteDropFileInput");
+
+  /* ---- 1. Handle Click-Upload ---- */
+  fileInput.addEventListener("change", e => {
+    const file = e.target.files[0];
+    handleImageFileForOCR(file);
+  });
+
+  /* ---- 2. Handle Clipboard Paste ---- */
+  document.addEventListener("paste", e => {
+    if (!e.clipboardData) return;
+    const items = e.clipboardData.items;
+    for (let item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        handleImageFileForOCR(file);
+        return;
+      }
+    }
+  });
+
+  /* ---- 3. Drag & Drop ---- */
+  zone.addEventListener("dragover", e => {
+    e.preventDefault();
+    zone.style.background = "rgba(0,255,150,0.08)";
+    zone.style.borderColor = "var(--accent)";
+  });
+
+  zone.addEventListener("dragleave", () => {
+    zone.style.background = "var(--muted-bg)";
+    zone.style.borderColor = "var(--border-color)";
+  });
+
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.style.background = "var(--muted-bg)";
+    zone.style.borderColor = "var(--border-color)";
+
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      handleImageFileForOCR(file);
+    }
+  });
+
+  /* ---- 4. Make the entire zone clickable ---- */
+  zone.addEventListener("click", () => fileInput.click());
+});
+
+/* Hook up event */
+window.addEventListener('DOMContentLoaded', () => {
+  const dateInput = document.getElementById('plantStartDate');
+  dateInput.addEventListener('change', () => savePlantDate(dateInput.value));
+  loadPlantDate();
+});
+  </script>
+
+
+
+</body></html>
