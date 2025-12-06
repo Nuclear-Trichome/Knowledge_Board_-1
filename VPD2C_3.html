@@ -926,9 +926,19 @@ function ocrExtractNumber(text) {
 }
 
 async function ocrCrop(img, region, scaleX, scaleY) {
+  const startTime = performance.now();
+  const regionName = Object.entries(OCR_REGIONS).find(([_, r]) => r === region)?.[0] || 'unknown';
+  console.log(`Processing region ${regionName} at (${region.x},${region.y}) ${region.w}x${region.h}`);
+  
   const canvas = document.createElement('canvas');
   const w = Math.round(region.w * scaleX);
   const h = Math.round(region.h * scaleY);
+  
+  if (w <= 0 || h <= 0) {
+    console.error(`Invalid dimensions for region ${regionName}: ${w}x${h}`);
+    return '';
+  }
+  
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
@@ -942,11 +952,25 @@ async function ocrCrop(img, region, scaleX, scaleY) {
     0, 0, w, h
   );
 
-  const result = await Tesseract.recognize(canvas, 'eng', {
-    tessedit_char_whitelist: '0123456789.%°F',
-  });
-
-  return result.data.text;
+  console.log(`Starting Tesseract OCR for region ${regionName} (${w}x${h})`);
+  const tesseractStart = performance.now();
+  
+  try {
+    const result = await Tesseract.recognize(canvas, 'eng', {
+      tessedit_char_whitelist: '0123456789.%°F',
+      logger: m => {
+        if (m.status === 'recognizing text') return; // Too verbose
+        console.log(`Tesseract (${regionName}):`, m.status, m.progress ? `Progress: ${(m.progress * 100).toFixed(0)}%` : '');
+      }
+    });
+    
+    const processTime = performance.now() - startTime;
+    console.log(`OCR completed for ${regionName} in ${processTime.toFixed(1)}ms (Tesseract: ${(performance.now() - tesseractStart).toFixed(1)}ms)`);
+    return result.data.text.trim();
+  } catch (error) {
+    console.error(`Tesseract error in region ${regionName}:`, error);
+    return '';
+  }
 }
 
 async function runScreenshotOCR(file) {
@@ -966,12 +990,11 @@ async function runScreenshotOCR(file) {
 
         status.textContent = `Image loaded (${img.width}×${img.height}). Running OCR…`;
 
-        // Run OCR for all 4 fields
         const [t1Txt, h1Txt, t2Txt, h2Txt] = await Promise.all([
           ocrCrop(img, OCR_REGIONS.temp1, scaleX, scaleY),
           ocrCrop(img, OCR_REGIONS.rh1,   scaleX, scaleY),
           ocrCrop(img, OCR_REGIONS.temp2, scaleX, scaleY),
-          ocrCrop(img, OCR_REGIONS.rh2,   scaleX, scaleY)
+          ocrCrop(img, OCR_REGIONS.rh2,   scaleX, scaleY),
         ]);
 
         debug.textContent =
@@ -994,9 +1017,7 @@ S2 RH:   ${JSON.stringify(h2Txt)}
 
         status.textContent = "OCR complete. Values updated.";
 
-        // Auto-calc once fields are filled
         calculateVPD();
-
         resolve();
       } catch (err) {
         console.error(err);
@@ -1013,6 +1034,7 @@ S2 RH:   ${JSON.stringify(h2Txt)}
     img.src = URL.createObjectURL(file);
   });
 }
+
 
 // Hook up the OCR button
 document.addEventListener("DOMContentLoaded", () => {
