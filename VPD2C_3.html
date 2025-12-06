@@ -1005,10 +1005,11 @@ S2 Temp: ${JSON.stringify(t2Txt)}
 S2 RH:   ${JSON.stringify(h2Txt)}
 `;
 
-        const temp1 = ocrExtractNumber(t1Txt);
-        const rh1   = ocrExtractNumber(h1Txt);
-        const temp2 = ocrExtractNumber(t2Txt);
-        const rh2   = ocrExtractNumber(h2Txt);
+        let temp1 = sanitizeTemp(ocrExtractNumber(t1Txt));
+        let rh1   = sanitizeRH(ocrExtractNumber(h1Txt));
+        let temp2 = sanitizeTemp(ocrExtractNumber(t2Txt));
+        let rh2   = sanitizeRH(ocrExtractNumber(h2Txt));
+
 
         document.getElementById('temp1').value = isNaN(temp1) ? '' : temp1.toFixed(1);
         document.getElementById('rh1').value   = isNaN(rh1)   ? '' : rh1.toFixed(1);
@@ -1124,6 +1125,49 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---- 4. Make the entire zone clickable ---- */
   zone.addEventListener("click", () => fileInput.click());
 });
+
+/* ==========================
+   SANITIZE OCR NUMBERS
+   ========================== */
+
+// Fix temperature OCR errors like "734", "7300", "7.340", etc.
+function sanitizeTemp(val) {
+  if (isNaN(val) || val <= 0) return NaN;
+
+  // Convert to string for pattern work
+  let s = String(val).replace(/[^\d.]/g, "");
+
+  // If Tesseract merged digits: "730" -> treat as "73.0"
+  if (s.length === 3 && !s.includes(".")) {
+    s = s.slice(0, 2) + "." + s.slice(2);
+  }
+
+  // If too long, trim to first 4 characters
+  if (s.length > 4) {
+    s = s.slice(0, 4);
+  }
+
+  let num = parseFloat(s);
+  if (num < 30 || num > 120) return NaN; // Safety: Typical indoor °F range
+  return num;
+}
+
+// Fix humidity OCR errors like "520", "052"
+function sanitizeRH(val) {
+  if (isNaN(val) || val < 0) return NaN;
+
+  let s = String(val).replace(/[^\d.]/g, "");
+
+  // RH should not exceed 100
+  if (s.length > 2 && !s.includes(".")) {
+    s = s.slice(0, 2);
+  }
+
+  let num = parseFloat(s);
+  if (num < 0 || num > 100) return NaN;
+  return num;
+}
+
 
 /* Hook up event */
 window.addEventListener('DOMContentLoaded', () => {
