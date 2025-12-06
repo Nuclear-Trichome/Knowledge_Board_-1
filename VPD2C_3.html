@@ -910,13 +910,13 @@ let ocrWorker = null;
 
 async function initOcrWorker() {
   if (!ocrWorker) {
-    ocrWorker = Tesseract.createWorker({
-      logger: m => console.log("Tesseract:", m),  // optional
-    });
-
-    await ocrWorker.load();
-    await ocrWorker.loadLanguage('eng');
-    await ocrWorker.initialize('eng');
+    ocrWorker = await Tesseract.createWorker(
+      "eng",
+      1,                 // 1 worker thread
+      {
+        logger: m => console.log("Tesseract:", m)
+      }
+    );
   }
 }
 
