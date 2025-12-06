@@ -9,6 +9,9 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     margin: 1rem;
+    background: #ffffff;
+    color: #000000;
+    transition: background 0.25s ease, color 0.25s ease;
   }
 
   .guide-container {
@@ -18,6 +21,7 @@
     max-height: 80vh;
     overflow-y: auto;
     padding: 0.5rem 0.75rem 0.75rem;
+    transition: background 0.25s ease, border-color 0.25s ease;
   }
 
   .guide-toolbar {
@@ -32,6 +36,7 @@
     align-items: center;
     border-bottom: 1px solid #ddd;
     z-index: 1;
+    transition: background 0.25s ease, border-color 0.25s ease;
   }
 
   .guide-toolbar span {
@@ -46,6 +51,7 @@
     font-size: 0.85rem;
     cursor: pointer;
     background: #fff;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
   }
 
   .guide-zoom-btn:active {
@@ -57,6 +63,84 @@
     line-height: 1.4;
     white-space: pre-wrap;
     font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+	/* TRUE TEXT OUTLINE FOR ALL TEMPERATURE LINES (Chrome, Safari, Firefox, Edge) */
+.temp-line {
+  position: relative;
+
+  /* Chrome / Safari / Edge outline */
+  -webkit-text-stroke: 0.1px rgba(0,0,0,0.55);
+
+  /* Firefox-compatible outline */
+  text-shadow:
+    -1px  0px 1px rgba(0,0,0,0.65),
+     1px  0px 1px rgba(0,0,0,0.65),
+     0px -1px 1px rgba(0,0,0,0.65),
+     0px  1px 1px rgba(0,0,0,0.65),
+    -1px -1px 1px rgba(0,0,0,0.65),
+     1px -1px 1px rgba(0,0,0,0.65),
+    -1px  1px 1px rgba(0,0,0,0.65),
+     1px  1px 1px rgba(0,0,0,0.65);
+}
+
+  /* Per-mode radial gradient highlights (center → outer) */
+
+  /* Ultra-low (Hidden Blue) */
+  .mode-ul {
+    background: radial-gradient(circle, #33FFFF 0%, #0000FF 50%, #7F00FF 100%);
+  }
+
+  /* Low (Blue) */
+  .mode-low {
+    background: radial-gradient(circle, #3333FF 0%, #0000FF 50%, #0000CC 100%);
+  }
+
+  /* Medium (Green) */
+  .mode-med {
+    background: radial-gradient(circle, #00FF00 0%, #33FF33 50%, #66FF66 100%);
+  }
+
+  /* High (Red) */
+  .mode-high {
+    background: radial-gradient(circle, #CC0000 0%, #FF0000 50%, #FF6666 100%);
+  }
+
+  /* Peak / Max (White) */
+  .mode-peak {
+    background: radial-gradient(circle, #C0C0C0 0%, #E0E0E0 50%, #FFFFFF 100%);
+  }
+
+  /* Ultra-high (Hidden White) */
+  .mode-uhigh {
+    background: radial-gradient(circle, #99CCFF 0%, #CCFFFF 50%, #FFCCE5 100%);
+  }
+
+  /* Dark mode */
+
+  body.dark {
+    background: #111111;
+    color: #EEEEEE;
+  }
+
+  body.dark .guide-container {
+    background: #181818;
+    border-color: #555555;
+  }
+
+  body.dark .guide-toolbar {
+    background: #181818;
+    border-bottom-color: #555555;
+  }
+
+  body.dark .guide-zoom-btn {
+    background: #222222;
+    color: #EEEEEE;
+    border-color: #666666;
+  }
+
+  body.dark #guide-box {
+    color: #EEEEEE;
   }
 </style>
 
@@ -76,6 +160,18 @@
     box.style.fontSize = (zoom * 100) + '%';
   }
 
+  function applyTheme(theme) {
+    var body = document.body;
+    var btn = document.getElementById('theme-toggle');
+    if (theme === 'dark') {
+      body.classList.add('dark');
+      if (btn) btn.textContent = 'Light';
+    } else {
+      body.classList.remove('dark');
+      if (btn) btn.textContent = 'Dark';
+    }
+  }
+
   window.guideZoomIn = function () {
     if (zoom < maxZoom) {
       zoom = Math.round((zoom + step) * 10) / 10;
@@ -90,10 +186,26 @@
     }
   };
 
+  window.toggleTheme = function () {
+    var next = document.body.classList.contains('dark') ? 'light' : 'dark';
+    localStorage.setItem('pivotTheme', next);
+    applyTheme(next);
+  };
+
   if (document.addEventListener) {
-    document.addEventListener('DOMContentLoaded', applyZoom, false);
+    document.addEventListener('DOMContentLoaded', function () {
+      box = document.getElementById('guide-box');
+      applyZoom();
+      var stored = localStorage.getItem('pivotTheme') || 'light';
+      applyTheme(stored);
+    }, false);
   } else {
-    window.attachEvent('onload', applyZoom);
+    window.attachEvent('onload', function () {
+      box = document.getElementById('guide-box');
+      applyZoom();
+      var stored = localStorage.getItem('pivotTheme') || 'light';
+      applyTheme(stored);
+    });
   }
 })();
 </script>
@@ -105,6 +217,8 @@
     <span>Zoom:</span>
     <button type="button" class="guide-zoom-btn" onclick="guideZoomOut()">A-</button>
     <button type="button" class="guide-zoom-btn" onclick="guideZoomIn()">A+</button>
+    <span style="margin-left:0.75rem;">Mode:</span>
+    <button type="button" id="theme-toggle" class="guide-zoom-btn" onclick="toggleTheme()">Dark</button>
   </div>
 
 <pre id="guide-box">
@@ -121,74 +235,74 @@ Boosting extends the session AND raises temperature.
    Access: Blue > start heat > 5 clicks
    Estimated base temp range.
 
-Base ............. ~470–490°F
-Boost 1× ......... ~488–508°F
-Boost 2× ......... ~506–526°F
-Boost 3× ......... ~524–544°F
-Boost 4× ......... ~542–562°F
+<span class="temp-line mode-ul" style="color:#19FB00">Base ............. ~470–490°F</span>
+<span class="temp-line mode-ul" style="color:#47F400">Boost 1× ......... ~488–508°F</span>
+<span class="temp-line mode-ul" style="color:#74ED00">Boost 2× ......... ~506–526°F</span>
+<span class="temp-line mode-ul" style="color:#A2E600">Boost 3× ......... ~524–544°F</span>
+<span class="temp-line mode-ul" style="color:#CFDF00">Boost 4× ......... ~542–562°F</span>
 
 
 ====================================================
 2. LOW (Blue)
    The lowest *official* temperature.
 
-Base ............. 500°F
-Boost 1× ......... 518°F
-Boost 2× ......... 536°F
-Boost 3× ......... 554°F
-Boost 4× ......... 572°F
+<span class="temp-line mode-low" style="color:#4CF300">Base ............. 500°F</span>
+<span class="temp-line mode-low" style="color:#79EC00">Boost 1× ......... 518°F</span>
+<span class="temp-line mode-low" style="color:#A7E500">Boost 2× ......... 536°F</span>
+<span class="temp-line mode-low" style="color:#D4DE00">Boost 3× ......... 554°F</span>
+<span class="temp-line mode-low" style="color:#FFD600">Boost 4× ......... 572°F</span>
 
 
 ====================================================
 3. MEDIUM (Green)
 
-Base ............. 520°F
-Boost 1× ......... 538°F
-Boost 2× ......... 556°F
-Boost 3× ......... 574°F
-Boost 4× ......... 592°F
+<span class="temp-line mode-med" style="color:#7EEB00">Base ............. 520°F</span>
+<span class="temp-line mode-med" style="color:#ACE400">Boost 1× ......... 538°F</span>
+<span class="temp-line mode-med" style="color:#D9DD00">Boost 2× ......... 556°F</span>
+<span class="temp-line mode-med" style="color:#FFD300">Boost 3× ......... 574°F</span>
+<span class="temp-line mode-med" style="color:#FFB900">Boost 4× ......... 592°F</span>
 
 
 ====================================================
 4. HIGH (Red)
 
-Base ............. 540°F
-Boost 1× ......... 558°F
-Boost 2× ......... 576°F
-Boost 3× ......... 594°F
-Boost 4× ......... 612°F
+<span class="temp-line mode-high" style="color:#B1E300">Base ............. 540°F</span>
+<span class="temp-line mode-high" style="color:#DEDC00">Boost 1× ......... 558°F</span>
+<span class="temp-line mode-high" style="color:#FFD000">Boost 2× ......... 576°F</span>
+<span class="temp-line mode-high" style="color:#FFB600">Boost 3× ......... 594°F</span>
+<span class="temp-line mode-high" style="color:#FF9C00">Boost 4× ......... 612°F</span>
 
 
 ====================================================
 5. PEAK / MAX (White)
 
-Base ............. 585°F
-Boost 1× ......... 603°F
-Boost 2× ......... 621°F
-Boost 3× ......... 639°F
-Boost 4× ......... 657°F
+<span class="temp-line mode-peak" style="color:#FFC300">Base ............. 585°F</span>
+<span class="temp-line mode-peak" style="color:#FFA900">Boost 1× ......... 603°F</span>
+<span class="temp-line mode-peak" style="color:#FF8F00">Boost 2× ......... 621°F</span>
+<span class="temp-line mode-peak" style="color:#FF7500">Boost 3× ......... 639°F</span>
+<span class="temp-line mode-peak" style="color:#FF5B00">Boost 4× ......... 657°F</span>
 
 
 ====================================================
 6. ULTRA-HIGH (Hidden White Mode)
    Access: White > start heat > 5 clicks
-   Estimated base temp slightly above official max.
+   Estimated base temp range, slightly above official max.
 
-Base ............. ~600°F
-Boost 1× ......... ~618°F
-Boost 2× ......... ~636°F
-Boost 3× ......... ~654°F
-Boost 4× ......... ~672°F
+<span class="temp-line mode-uhigh" style="color:#FFB400">Base ............. ~590–600°F</span>
+<span class="temp-line mode-uhigh" style="color:#FF9A00">Boost 1× ......... ~608–618°F</span>
+<span class="temp-line mode-uhigh" style="color:#FF8000">Boost 2× ......... ~626–636°F</span>
+<span class="temp-line mode-uhigh" style="color:#FF6600">Boost 3× ......... ~644–654°F</span>
+<span class="temp-line mode-uhigh" style="color:#FF4C00">Boost 4× ......... ~662–672°F</span>
 
 
 ====================================================
 Relative Order (Low → High)
-1. Ultra-Low Hidden
-2. Blue
-3. Green
-4. Red
-5. White
-6. Ultra-High Hidden
+<span class="temp-line mode-ul">1. Ultra-Low Hidden</span>
+<span class="temp-line mode-low">2. Blue</span>
+<span class="temp-line mode-med">3. Green</span>
+<span class="temp-line mode-high">4. Red</span>
+<span class="temp-line mode-peak">5. White</span>
+<span class="temp-line mode-uhigh">6. Ultra-High Hidden</span>
 ====================================================
 </pre>
 
