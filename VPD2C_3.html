@@ -905,6 +905,21 @@ function updatePlantAge() {
 
 /* ===================== SCREENSHOT OCR ENGINE ===================== */
 
+// Create one shared Tesseract worker for the whole page
+let ocrWorker = null;
+
+async function initOcrWorker() {
+  if (!ocrWorker) {
+    ocrWorker = Tesseract.createWorker({
+      logger: m => console.log("Tesseract:", m),  // optional
+    });
+
+    await ocrWorker.load();
+    await ocrWorker.loadLanguage('eng');
+    await ocrWorker.initialize('eng');
+  }
+}
+
 const BASE_WIDTH = 1206;
 const BASE_HEIGHT = 2622;
 
@@ -1006,12 +1021,13 @@ async function runScreenshotOCR(file) {
 
         status.textContent = `Image loaded (${img.width}×${img.height}). Running OCR…`;
 
-        const [t1Txt, h1Txt, t2Txt, h2Txt] = await Promise.all([
-          ocrCrop(img, OCR_REGIONS.temp1, scaleX, scaleY),
-          ocrCrop(img, OCR_REGIONS.rh1,   scaleX, scaleY),
-          ocrCrop(img, OCR_REGIONS.temp2, scaleX, scaleY),
-          ocrCrop(img, OCR_REGIONS.rh2,   scaleX, scaleY),
-        ]);
+        await initOcrWorker();
+
+        let t1Txt = await ocrRecognizeRegion(img, OCR_REGIONS.temp1, scaleX, scaleY);
+        let h1Txt = await ocrRecognizeRegion(img, OCR_REGIONS.rh1,   scaleX, scaleY);
+        let t2Txt = await ocrRecognizeRegion(img, OCR_REGIONS.temp2, scaleX, scaleY);
+        let h2Txt = await ocrRecognizeRegion(img, OCR_REGIONS.rh2,   scaleX, scaleY);
+
 
         debug.textContent =
 `Raw OCR:
@@ -1053,6 +1069,26 @@ S2 RH:   ${JSON.stringify(h2Txt)}
   });
 }
 
+async function ocrRecognizeRegion(img, region, scaleX, scaleY) {
+  const canvas = document.createElement('canvas');
+  const w = Math.round(region.w * scaleX);
+  const h = Math.round(region.h * scaleY);
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(
+    img,
+    region.x * scaleX,
+    region.y * scaleY,
+    region.w * scaleX,
+    region.h * scaleY,
+    0, 0, w, h
+  );
+
+  const result = await ocrWorker.recognize(canvas);
+  return result.data.text.trim();
+}
 
 // Hook up the OCR button
 document.addEventListener("DOMContentLoaded", () => {
