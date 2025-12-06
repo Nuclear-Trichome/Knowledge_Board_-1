@@ -910,14 +910,13 @@ let ocrWorker = null;
 
 async function initOcrWorker() {
   if (!ocrWorker) {
-    ocrWorker = await Tesseract.createWorker(
-      "eng",
-      1,                 // 1 worker thread
-      {
-        logger: m => console.log("Tesseract:", m)
-      }
-    );
+    ocrWorker = await Tesseract.createWorker({
+      logger: m => console.log("Tesseract:", m)
+    });
+    await ocrWorker.loadLanguage('eng');
+    await ocrWorker.initialize('eng');
   }
+  console.log("Worker:", ocrWorker);
 }
 
 const BASE_WIDTH = 1206;
@@ -956,53 +955,53 @@ function ocrExtractNumber(text) {
   return parseFloat(t);
 }
 
-async function ocrCrop(img, region, scaleX, scaleY) {
-  const startTime = performance.now();
-  const regionName = Object.entries(OCR_REGIONS).find(([_, r]) => r === region)?.[0] || 'unknown';
-  console.log(`Processing region ${regionName} at (${region.x},${region.y}) ${region.w}x${region.h}`);
+// async function ocrCrop(img, region, scaleX, scaleY) {
+//   const startTime = performance.now();
+//   const regionName = Object.entries(OCR_REGIONS).find(([_, r]) => r === region)?.[0] || 'unknown';
+//   console.log(`Processing region ${regionName} at (${region.x},${region.y}) ${region.w}x${region.h}`);
   
-  const canvas = document.createElement('canvas');
-  const w = Math.round(region.w * scaleX);
-  const h = Math.round(region.h * scaleY);
+//   const canvas = document.createElement('canvas');
+//   const w = Math.round(region.w * scaleX);
+//   const h = Math.round(region.h * scaleY);
   
-  if (w <= 0 || h <= 0) {
-    console.error(`Invalid dimensions for region ${regionName}: ${w}x${h}`);
-    return '';
-  }
+//   if (w <= 0 || h <= 0) {
+//     console.error(`Invalid dimensions for region ${regionName}: ${w}x${h}`);
+//     return '';
+//   }
   
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
+//   canvas.width = w;
+//   canvas.height = h;
+//   const ctx = canvas.getContext('2d');
 
-  ctx.drawImage(
-    img,
-    region.x * scaleX,
-    region.y * scaleY,
-    region.w * scaleX,
-    region.h * scaleY,
-    0, 0, w, h
-  );
+//   ctx.drawImage(
+//     img,
+//     region.x * scaleX,
+//     region.y * scaleY,
+//     region.w * scaleX,
+//     region.h * scaleY,
+//     0, 0, w, h
+//   );
 
-  console.log(`Starting Tesseract OCR for region ${regionName} (${w}x${h})`);
-  const tesseractStart = performance.now();
+//   console.log(`Starting Tesseract OCR for region ${regionName} (${w}x${h})`);
+//   const tesseractStart = performance.now();
   
-  try {
-    const result = await Tesseract.recognize(canvas, 'eng', {
-      tessedit_char_whitelist: '0123456789.%°F',
-      logger: m => {
-        if (m.status === 'recognizing text') return; // Too verbose
-        console.log(`Tesseract (${regionName}):`, m.status, m.progress ? `Progress: ${(m.progress * 100).toFixed(0)}%` : '');
-      }
-    });
+//   try {
+//     const result = await Tesseract.recognize(canvas, 'eng', {
+//       tessedit_char_whitelist: '0123456789.%°F',
+//       logger: m => {
+//         if (m.status === 'recognizing text') return; // Too verbose
+//         console.log(`Tesseract (${regionName}):`, m.status, m.progress ? `Progress: ${(m.progress * 100).toFixed(0)}%` : '');
+//       }
+//     });
     
-    const processTime = performance.now() - startTime;
-    console.log(`OCR completed for ${regionName} in ${processTime.toFixed(1)}ms (Tesseract: ${(performance.now() - tesseractStart).toFixed(1)}ms)`);
-    return result.data.text.trim();
-  } catch (error) {
-    console.error(`Tesseract error in region ${regionName}:`, error);
-    return '';
-  }
-}
+//     const processTime = performance.now() - startTime;
+//     console.log(`OCR completed for ${regionName} in ${processTime.toFixed(1)}ms (Tesseract: ${(performance.now() - tesseractStart).toFixed(1)}ms)`);
+//     return result.data.text.trim();
+//   } catch (error) {
+//     console.error(`Tesseract error in region ${regionName}:`, error);
+//     return '';
+//   }
+// }
 
 async function runScreenshotOCR(file) {
   const status = document.getElementById('ocrStatus');
@@ -1086,8 +1085,8 @@ async function ocrRecognizeRegion(img, region, scaleX, scaleY) {
     0, 0, w, h
   );
 
-  const result = await ocrWorker.recognize(canvas);
-  return result.data.text.trim();
+  const { data: { text } } = await ocrWorker.recognize(canvas);
+  return text.trim();
 }
 
 // Hook up the OCR button
