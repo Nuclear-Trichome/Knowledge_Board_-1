@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local GIF Combiner (iOS) — resilient loader</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; padding: 16px; background:#0b0b0c; color:#f3f3f3; }
+    .card { max-width: 900px; margin: 0 auto; padding: 16px; border: 1px solid #2a2a2e; border-radius: 12px; background:#121216; }
+    h1 { margin: 0 0 8px; font-size: 18px; }
+    p { margin: 8px 0; color:#c8c8d0; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    button, input[type="file"]::file-selector-button {
+      background:#2b6cff; color:#fff; border:0; border-radius:10px; padding:10px 12px;
+      font-weight:600; cursor:pointer;
+    }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    input[type="file"] { width: 100%; }
+    .small { font-size: 12px; color:#a9a9b4; }
+    .grid { display:grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+    @media (min-width: 720px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .panel { border: 1px solid #2a2a2e; border-radius: 12px; padding: 12px; background:#0f0f13; }
+    .list { display:flex; flex-direction:column; gap:8px; max-height: 260px; overflow:auto; }
+    .item { display:flex; justify-content:space-between; gap:8px; padding:8px; border-radius:10px; background:#15151b; }
+    .item b { font-size: 13px; }
+    .item span { font-size: 12px; color:#b7b7c2; }
+    .progress { height: 10px; background:#1b1b22; border-radius: 999px; overflow:hidden; }
+    .bar { height: 100%; width:0%; background:#2b6cff; transition: width .15s linear; }
+    img { max-width:100%; border-radius: 12px; border: 1px solid #2a2a2e; background:#0b0b0c; }
+    .warn { color:#ffd27a; }
+    .err { color:#ff8a8a; white-space: pre-wrap; }
+    .ok { color:#8cffb1; }
+    .controls { display:flex; gap: 10px; flex-wrap: wrap; align-items:center; }
+    label { display:flex; gap:8px; align-items:center; }
+    input[type="number"] { width: 90px; padding:8px; border-radius:10px; border: 1px solid #2a2a2e; background:#0b0b0c; color:#fff; }
+    select { padding:8px; border-radius:10px; border: 1px solid #2a2a2e; background:#0b0b0c; color:#fff; }
+    code { background:#0b0b0c; padding:2px 6px; border-radius:6px; border:1px solid #2a2a2e; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Local GIF Combiner (iOS Safari)</h1>
+    <p>Select multiple GIFs and combine them end-to-end into one new GIF. Everything stays on your device.</p>
+    <p class="small warn">
+      iOS memory is limited. Start with small GIFs. If it crashes, reduce size/frames.
+    </p>
+
+    <div class="row" style="margin-top:12px;">
+      <input id="files" type="file" accept="image/gif" multiple />
+    </div>
+
+    <div class="controls" style="margin-top:12px;">
+      <label class="small">Output width:
+        <select id="outWMode">
+          <option value="max" selected>Max of inputs</option>
+          <option value="first">First GIF</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <input id="outWCustom" type="number" min="16" step="1" value="480" disabled />
+
+      <label class="small">Output height:
+        <select id="outHMode">
+          <option value="max" selected>Max of inputs</option>
+          <option value="first">First GIF</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <input id="outHCustom" type="number" min="16" step="1" value="480" disabled />
+
+      <label class="small">Scale:
+        <select id="scaleMode">
+          <option value="contain" selected>Contain (letterbox)</option>
+          <option value="cover">Cover (crop)</option>
+          <option value="stretch">Stretch</option>
+        </select>
+      </label>
+
+      <label class="small">FPS cap:
+        <input id="fpsCap" type="number" min="1" max="60" value="30" />
+      </label>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="combine" disabled>Combine GIFs</button>
+      <a id="downloadLink" style="display:none; color:#9ec1ff; font-weight:700;" download="combined.gif">Download combined.gif</a>
+    </div>
+
+    <div style="margin-top:12px;">
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="small" id="status" style="margin-top:8px;">Booting…</div>
+      <div class="err" id="error"></div>
+      <div class="small" id="loaderDetails" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <b>Selected GIFs</b>
+        <div class="list" id="list" style="margin-top:10px;"></div>
+      </div>
+      <div class="panel">
+        <b>Output preview</b>
+        <div style="margin-top:10px;">
+          <img id="preview" alt="Output preview will appear here" />
+        </div>
+      </div>
+    </div>
+
+    <p class="small" style="margin-top:14px;">
+      Tip: for maximum reliability, vendor the libraries into your repo and reference them as
+      <code>./vendor/gifuct.min.js</code> and <code>./vendor/gif.js</code>.
+      This page will try multiple CDNs and then local vendor paths automatically.
+    </p>
+  </div>
+
+  <script>
+  // ============================================================
+  // Resilient script loader:
+  // - Tries jsDelivr, then unpkg, then local ./vendor copies.
+  // This avoids the "gifuct-js failed to load" situation you saw
+  // even under GitHub Pages in some networks.
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const errorEl = $("error");
+  const barEl = $("bar");
+  const loaderDetailsEl = $("loaderDetails");
+
+  function setProgress(pct, msg) {
+    barEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    if (msg) statusEl.textContent = msg;
+  }
+  function setError(msg) { errorEl.textContent = msg || ""; }
+  function addLoaderDetail(line) {
+    loaderDetailsEl.textContent += (loaderDetailsEl.textContent ? "\n" : "") + line;
+  }
+
+  function loadScript(url, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = url;
+      s.async = true;
+
+      const t = setTimeout(() => {
+        s.remove();
+        reject(new Error(`Timeout loading ${url}`));
+      }, timeoutMs);
+
+      s.onload = () => { clearTimeout(t); resolve(url); };
+      s.onerror = () => { clearTimeout(t); s.remove(); reject(new Error(`Failed to load ${url}`)); };
+
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadFirstWorking(name, urls) {
+    for (const u of urls) {
+      try {
+        addLoaderDetail(`Loading ${name}: ${u}`);
+        await loadScript(u);
+        addLoaderDetail(`✓ Loaded ${name} from: ${u}`);
+        return u;
+      } catch (e) {
+        addLoaderDetail(`✗ ${e.message}`);
+      }
+    }
+    throw new Error(`${name} could not be loaded from any source.`);
+  }
+
+  function resolveGifuct() {
+    // gifuct-js usually attaches window.gifuct.{parseGIF,decompressFrames}
+    // but some builds may attach parseGIF/decompressFrames directly.
+    const api = (window.gifuct && (window.gifuct.parseGIF || window.gifuct.decompressFrames)) ? window.gifuct : window;
+    return { parseGIF: api.parseGIF, decompressFrames: api.decompressFrames };
+  }
+
+  function resolveGifJs() {
+    // gif.js exposes window.GIF as constructor.
+    return { GIF: window.GIF };
+  }
+
+  // ============================================================
+  // App (runs after libs are loaded)
+  // ============================================================
+  async function boot() {
+    setProgress(2, "Loading libraries…");
+    setError("");
+    loaderDetailsEl.textContent = "";
+
+    // Try multiple sources + local vendor fallback
+    const gifuctUrls = [
+      "https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct.min.js",
+      "https://unpkg.com/gifuct-js@2.1.2/dist/gifuct.min.js",
+      "./vendor/gifuct.min.js"
+    ];
+
+    const gifjsUrls = [
+      "https://cdn.jsdelivr.net/npm/gif.js.optimized@1.0.1/dist/gif.js",
+      "https://unpkg.com/gif.js.optimized@1.0.1/dist/gif.js",
+      "./vendor/gif.js"
+    ];
+
+    try {
+      await loadFirstWorking("gifuct-js", gifuctUrls);
+      setProgress(10, "Loading libraries… (2/2)");
+      await loadFirstWorking("gif.js", gifjsUrls);
+    } catch (e) {
+      setProgress(0, "Libraries not loaded.");
+      setError(
+        `${e.message}\n\n` +
+        `If you want zero-CDN reliability, add these two files to your GitHub Pages repo:\n` +
+        `  - vendor/gifuct.min.js\n` +
+        `  - vendor/gif.js\n\n` +
+        `Then reload. (This page already tries ./vendor/* as a fallback.)`
+      );
+      return;
+    }
+
+    const { parseGIF, decompressFrames } = resolveGifuct();
+    const { GIF } = resolveGifJs();
+
+    if (typeof parseGIF !== "function" || typeof decompressFrames !== "function" || typeof GIF !== "function") {
+      setProgress(0, "Libraries loaded but not detected.");
+      setError(
+        `Scripts loaded, but expected globals were not found.\n\n` +
+        `Found:\n` +
+        `  parseGIF: ${typeof parseGIF}\n` +
+        `  decompressFrames: ${typeof decompressFrames}\n` +
+        `  GIF: ${typeof GIF}\n\n` +
+        `This can happen if a different build is served. Try the vendor fallback.`
+      );
+      return;
+    }
+
+    // Now that libs are present, initialize UI + handlers
+    initApp({ parseGIF, decompressFrames, GIF });
+  }
+
+  function initApp({ parseGIF, decompressFrames, GIF }) {
+    setProgress(0, "Idle.");
+    addLoaderDetail("✅ Libraries ready; app initialized.");
+
+    const filesEl = $("files");
+    const combineBtn = $("combine");
+    const listEl = $("list");
+    const previewEl = $("preview");
+    const downloadLink = $("downloadLink");
+
+    const outWMode = $("outWMode");
+    const outHMode = $("outHMode");
+    const outWCustom = $("outWCustom");
+    const outHCustom = $("outHCustom");
+    const scaleMode = $("scaleMode");
+    const fpsCapEl = $("fpsCap");
+
+    function updateCustomInputs() {
+      outWCustom.disabled = outWMode.value !== "custom";
+      outHCustom.disabled = outHMode.value !== "custom";
+    }
+    outWMode.addEventListener("change", updateCustomInputs);
+    outHMode.addEventListener("change", updateCustomInputs);
+    updateCustomInputs();
+
+    function formatBytes(bytes) {
+      const units = ["B","KB","MB","GB"];
+      let i = 0, n = bytes;
+      while (n >= 1024 && i < units.length-1) { n /= 1024; i++; }
+      return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
+    }
+
+    async function readAsArrayBuffer(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+        r.readAsArrayBuffer(file);
+      });
+    }
+
+    // Draw an ImageData onto a canvas with scaling modes
+    function drawFrameToCanvas(ctx, frameImageData, dstW, dstH, mode) {
+      const srcW = frameImageData.width;
+      const srcH = frameImageData.height;
+
+      const tmp = document.createElement("canvas");
+      tmp.width = srcW;
+      tmp.height = srcH;
+      tmp.getContext("2d").putImageData(frameImageData, 0, 0);
+
+      ctx.clearRect(0, 0, dstW, dstH);
+
+      if (mode === "stretch") {
+        ctx.drawImage(tmp, 0, 0, dstW, dstH);
+        return;
+      }
+
+      const srcAR = srcW / srcH;
+      const dstAR = dstW / dstH;
+
+      let drawW, drawH, dx, dy;
+
+      if (mode === "contain") {
+        if (srcAR > dstAR) {
+          drawW = dstW;
+          drawH = Math.round(dstW / srcAR);
+        } else {
+          drawH = dstH;
+          drawW = Math.round(dstH * srcAR);
+        }
+        dx = Math.round((dstW - drawW) / 2);
+        dy = Math.round((dstH - drawH) / 2);
+        ctx.drawImage(tmp, dx, dy, drawW, drawH);
+        return;
+      }
+
+      // cover
+      if (srcAR > dstAR) {
+        drawH = dstH;
+        drawW = Math.round(dstH * srcAR);
+      } else {
+        drawW = dstW;
+        drawH = Math.round(dstW / srcAR);
+      }
+      dx = Math.round((dstW - drawW) / 2);
+      dy = Math.round((dstH - drawH) / 2);
+      ctx.drawImage(tmp, dx, dy, drawW, drawH);
+    }
+
+    let selectedFiles = [];
+
+    filesEl.addEventListener("change", () => {
+      setError("");
+      downloadLink.style.display = "none";
+      previewEl.removeAttribute("src");
+      selectedFiles = Array.from(filesEl.files || []).filter(f => f.type === "image/gif");
+
+      listEl.innerHTML = "";
+      for (const f of selectedFiles) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `<div><b>${escapeHtml(f.name)}</b><div><span>${formatBytes(f.size)}</span></div></div>`;
+        listEl.appendChild(div);
+      }
+
+      combineBtn.disabled = selectedFiles.length < 2;
+      setProgress(0, selectedFiles.length ? `Ready. ${selectedFiles.length} GIF(s) selected.` : "Idle.");
+    });
+
+    combineBtn.addEventListener("click", async () => {
+      setError("");
+      downloadLink.style.display = "none";
+      previewEl.removeAttribute("src");
+
+      try {
+        if (selectedFiles.length < 2) return;
+
+        setProgress(2, "Decoding GIFs…");
+
+        const decoded = [];
+        let maxW = 0, maxH = 0;
+
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const f = selectedFiles[i];
+          setProgress(2 + Math.round((i / selectedFiles.length) * 25), `Decoding: ${f.name}`);
+
+          const buf = await readAsArrayBuffer(f);
+          const gif = parseGIF(buf);
+          const frames = decompressFrames(gif, true);
+
+          const w = gif.lsd && gif.lsd.width ? gif.lsd.width : (frames[0]?.dims?.width || 0);
+          const h = gif.lsd && gif.lsd.height ? gif.lsd.height : (frames[0]?.dims?.height || 0);
+
+          maxW = Math.max(maxW, w);
+          maxH = Math.max(maxH, h);
+
+          decoded.push({ frames, width: w, height: h });
+        }
+
+        const first = decoded[0];
+        const outW =
+          outWMode.value === "first" ? first.width :
+          outWMode.value === "custom" ? Math.max(16, parseInt(outWCustom.value || "480", 10)) :
+          maxW;
+
+        const outH =
+          outHMode.value === "first" ? first.height :
+          outHMode.value === "custom" ? Math.max(16, parseInt(outHCustom.value || "480", 10)) :
+          maxH;
+
+        const fpsCap = Math.max(1, Math.min(60, parseInt(fpsCapEl.value || "30", 10)));
+        const minDelayMs = Math.round(1000 / fpsCap);
+
+        setProgress(30, `Encoding output GIF (${outW}×${outH})…`);
+
+        // For maximum iOS compatibility, run without workers (works on GitHub Pages too).
+        const gifEnc = new GIF({
+          workers: 0,
+          quality: 10,
+          width: outW,
+          height: outH
+        });
+
+        const canvas = document.createElement("canvas");
+        canvas.width = outW;
+        canvas.height = outH;
+        const ctx = canvas.getContext("2d");
+
+        let totalFrames = decoded.reduce((sum, d) => sum + d.frames.length, 0);
+        let frameCount = 0;
+
+        for (const d of decoded) {
+          for (const fr of d.frames) {
+            const imgData = new ImageData(fr.patch, fr.dims.width, fr.dims.height);
+            drawFrameToCanvas(ctx, imgData, outW, outH, scaleMode.value);
+
+            let delayMs = Math.max(10, (fr.delay || 10) * 10);
+            delayMs = Math.max(delayMs, minDelayMs);
+
+            gifEnc.addFrame(canvas, { copy: true, delay: delayMs });
+
+            frameCount++;
+            if (frameCount % 5 === 0 || frameCount === totalFrames) {
+              const pct = 30 + Math.round((frameCount / totalFrames) * 60);
+              setProgress(pct, `Encoding… (${frameCount}/${totalFrames} frames)`);
+              await new Promise(r => setTimeout(r, 0));
+            }
+          }
+        }
+
+        setProgress(92, "Finalizing…");
+
+        const blob = await new Promise((resolve, reject) => {
+          gifEnc.on("finished", resolve);
+          gifEnc.on("abort", () => reject(new Error("Encoding aborted")));
+          gifEnc.on("error", reject);
+          gifEnc.render();
+        });
+
+        const url = URL.createObjectURL(blob);
+        previewEl.src = url;
+        downloadLink.href = url;
+        downloadLink.style.display = "inline-block";
+
+        setProgress(100, `Done. Output size: ${formatBytes(blob.size)}`);
+        statusEl.className = "small ok";
+      } catch (e) {
+        statusEl.className = "small";
+        setProgress(0, "Failed.");
+        setError(String(e && e.stack ? e.stack : e));
+      }
+    });
+
+    $("combine").disabled = true; // until files chosen
+  }
+
+  boot();
+  </script>
+</body>
+</html>
