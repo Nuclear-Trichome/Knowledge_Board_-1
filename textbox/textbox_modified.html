@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<!--
+
+  Hey there! Thanks for looking at my source code.
+
+  I'm Jamon Holmgren. I needed something like this, and so I built it.
+
+  I'd be honored if you would contribute to this and make it better!
+
+  The rules:
+
+  1. One file only, no dependencies
+  2. The source code has to be readable
+
+  If you like this little experiment, hit me up on 𝕏: https://x.com/jamonholmgren or email me at hello@jamon.dev.
+
+  Happy writing!
+-->
+<html lang="en">
+  <head>
+    <title>textbox.page - Simple text box for writing</title>
+    <meta name="description" content="Simple autosaving text box for writing and editing text. No accounts, no tracking, just a text box." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <style>
+      :root {
+        /* Dark theme (default) */
+        --bg-color: #111317;
+        --textarea-bg: #191d23;
+        --text-color: #f3f6fb;
+        --muted-text-color: #c8d1dd;
+        --settings-bg: #171b21;
+        --border-color: #566273;
+        --focus-color: #8ab4ff;
+        --button-hover-bg: #232933;
+        --selection-bg: rgba(138, 180, 255, 0.35);
+        --font-size: 18px;
+        --transition-speed: 0.2s;
+      }
+
+      [data-theme="light"] {
+        --bg-color: #f7f9fc;
+        --textarea-bg: #ffffff;
+        --text-color: #1f2937;
+        --muted-text-color: #374151;
+        --settings-bg: #eef2f7;
+        --border-color: #94a3b8;
+        --focus-color: #2563eb;
+        --button-hover-bg: #e8edf5;
+        --selection-bg: rgba(37, 99, 235, 0.18);
+      }
+
+      [data-theme="sepia"] {
+        --bg-color: #efe6d1;
+        --textarea-bg: #f8f2e4;
+        --text-color: #433320;
+        --muted-text-color: #5b4730;
+        --settings-bg: #e6dcc3;
+        --border-color: #ad9a77;
+        --focus-color: #8b5e34;
+        --button-hover-bg: #ede3cb;
+        --selection-bg: rgba(139, 94, 52, 0.18);
+      }
+
+      [data-theme="dusk"] {
+        --bg-color: #1f1e2a;
+        --textarea-bg: #262535;
+        --text-color: #f7f4ff;
+        --muted-text-color: #d9d0f0;
+        --settings-bg: #2c2a3f;
+        --border-color: #746d92;
+        --focus-color: #ffb86c;
+        --button-hover-bg: #35324a;
+        --selection-bg: rgba(255, 184, 108, 0.22);
+        --accent-color: #ffb86c;
+        --secondary-accent: #b9f27c;
+      }
+
+      html,
+      body {
+        background: var(--bg-color);
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
+        display: flex;
+        flex-direction: column;
+        color: var(--text-color);
+      }
+
+      body {
+        min-height: 100vh;
+      }
+
+      [data-theme="dusk"] body {
+        background: linear-gradient(135deg, #1f1e2a 0%, #2e2a40 100%);
+      }
+
+      main {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 0;
+        box-sizing: border-box;
+      }
+
+      #t {
+        display: block;
+        width: 92%;
+        padding: 3%;
+        flex: 1;
+        min-height: 0;
+        margin: 0 auto;
+        background: var(--textarea-bg);
+        font-size: var(--font-size);
+        line-height: 1.6;
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        font-family: Helvetica, Arial, sans-serif;
+        tab-size: 2;
+        transition: color var(--transition-speed) ease, background-color var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+        resize: none;
+        border-radius: 8px;
+        outline: none;
+        box-sizing: border-box;
+        caret-color: var(--focus-color);
+      }
+
+      #t::selection {
+        background: var(--selection-bg);
+      }
+
+      [data-theme="dusk"] #t {
+        background: linear-gradient(to bottom, #2a2839 0%, #232231 100%);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28);
+      }
+
+      #t:focus {
+        border-color: var(--focus-color);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-color) 30%, transparent);
+      }
+
+      @supports not (color: color-mix(in srgb, black 50%, white)) {
+        #t:focus,
+        .control:focus,
+        .control:focus-visible {
+          box-shadow: 0 0 0 3px rgba(138, 180, 255, 0.3);
+        }
+      }
+
+      #t.font-mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      #t.font-courier {
+        font-family: "Courier New", Courier, monospace;
+      }
+
+      #t.font-consolas {
+        font-family: Consolas, Monaco, "Andale Mono", monospace;
+      }
+
+      #t.font-serif {
+        font-family: Georgia, serif;
+      }
+
+      #t.font-sans {
+        font-family: Helvetica, Arial, sans-serif;
+      }
+
+      #t.font-garamond {
+        font-family: Garamond, "Times New Roman", serif;
+      }
+
+      #t.font-palatino {
+        font-family: "Palatino Linotype", Palatino, serif;
+      }
+
+      #t.font-verdana {
+        font-family: Verdana, Geneva, sans-serif;
+      }
+
+      #t.font-tahoma {
+        font-family: Tahoma, Geneva, sans-serif;
+      }
+
+      #t.font-trebuchet {
+        font-family: "Trebuchet MS", sans-serif;
+      }
+
+      #t.font-bookman {
+        font-family: "Bookman Old Style", serif;
+      }
+
+      #byline {
+        width: 100%;
+        text-align: center;
+        font-size: 13px;
+        color: var(--muted-text-color);
+        padding: 10px 5%;
+        line-height: 1.5;
+        box-sizing: border-box;
+        flex-shrink: 0;
+      }
+
+      #byline a,
+      #byline a:visited {
+        color: var(--text-color);
+        text-decoration: none;
+        border-bottom: 1px dotted currentColor;
+        transition: border-bottom var(--transition-speed) ease, color var(--transition-speed) ease;
+      }
+
+      #byline a:hover {
+        border-bottom: 1px solid currentColor;
+      }
+
+      .settings-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        margin: 8px auto;
+        max-width: 860px;
+      }
+
+      .settings-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .settings-group label {
+        margin-right: 3px;
+        white-space: nowrap;
+      }
+
+      .control {
+        padding: 6px 8px;
+        background: var(--settings-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease, background-color var(--transition-speed) ease, transform var(--transition-speed) ease;
+      }
+
+      .control:hover {
+        background: var(--button-hover-bg);
+      }
+
+      .control:focus,
+      .control:focus-visible {
+        outline: none;
+        border-color: var(--focus-color);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-color) 30%, transparent);
+      }
+
+      .control-button {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+      }
+
+      .control-button:active {
+        transform: translateY(1px);
+      }
+
+      .settings-group input[type="range"] {
+        width: 88px;
+        margin: 0;
+        accent-color: var(--focus-color);
+      }
+
+      #stats {
+        margin: 5px 0;
+        color: var(--muted-text-color);
+      }
+
+      .divider {
+        display: inline-block;
+        margin: 0 5px;
+      }
+
+      @media (max-width: 768px) {
+        .settings-container {
+          align-items: center;
+          gap: 5px;
+          margin: 5px auto;
+        }
+
+        .settings-group {
+          width: 100%;
+          justify-content: center;
+        }
+
+        #byline {
+          font-size: 11px;
+          margin: 0.5% auto;
+        }
+
+        .divider {
+          display: none;
+        }
+
+        main {
+          height: 70%;
+        }
+      }
+
+      .offscreen {
+        clip-path: inset(100%);
+        clip: rect(1px 1px 1px 1px);
+        height: 1px;
+        overflow: hidden;
+        position: absolute;
+        white-space: nowrap;
+        width: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <label for="t" class="offscreen">Text area for typing notes and code</label>
+      <textarea id="t" spellcheck="true" autocomplete="off"></textarea>
+    </main>
+    <div id="byline">
+      <div class="settings-container">
+        <select id="theme" class="control" aria-label="Theme selection">
+          <option value="dark">Dark</option>
+          <option value="dusk">Dusk</option>
+          <option value="light">Light</option>
+          <option value="sepia">Sepia</option>
+        </select>
+
+        <select id="font" class="control" aria-label="Font selection">
+          <!-- Font options will be populated dynamically based on mode -->
+        </select>
+
+        <input type="range" id="fontSize" class="control" min="12" max="36" value="18" aria-label="Font size" />
+        <span id="fontSizeValue">18px</span>
+
+        <select id="modeSelect" class="control" aria-label="Mode selection">
+          <option value="writing">Writing</option>
+          <option value="code">Code</option>
+        </select>
+
+        <button id="exportBtn" class="control control-button" aria-label="Download as text file" title="Download as .txt">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M8 10l-3-3M8 10l3-3"/><path d="M3 12h10"/></svg>
+        </button>
+        <button id="copyBtn" class="control control-button" aria-label="Copy to clipboard" title="Copy to clipboard">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V3a1 1 0 0 1 1-1h8"/></svg>
+        </button>
+      </div>
+
+      <div id="stats" aria-live="polite">0 lines, 0 words, 0 characters, 0 elapsed seconds</div>
+
+      <div>
+        by
+        <a href="https://jamon.dev" target="_blank" rel="noopener">Jamon Holmgren</a>
+        <span class="divider">&bull;</span>
+        <a href="https://github.com/jamonholmgren/textbox.jamon.dev" target="_blank" rel="noopener">GitHub Source</a>
+        <span class="divider">&bull;</span>
+        <a href="./richtextbox.html">Rich Textbox</a>
+        <span class="divider">&bull;</span>
+        <a href="./classic.html" target="_blank" rel="noopener">Classic</a>
+        <span class="divider">&bull;</span>
+        <a href="https://js.jamon.dev" target="_blank" rel="noopener">Simple JS Playground</a>
+      </div>
+    </div>
+
+    <script>
+      const DEFAULT_TEXT =
+        "Hey there! This is a simple textbox where you can take notes, write, paste, edit, and copy from. It will remember what you wrote, even if you close the tab and come back.\n\nBut don't worry -- this site only stores the information locally in your browser, not any servers or databases. I don't even have analytics, so I have no idea how many people use this (send me an email if you want!).\n\nTry changing the settings below...my favorite is Sepia color with Bookman font!"
+
+      const textarea = document.getElementById("t")
+      const stats = document.getElementById("stats")
+      const themeSelect = document.getElementById("theme")
+      const fontSelect = document.getElementById("font")
+      const fontSizeInput = document.getElementById("fontSize")
+      const fontSizeValue = document.getElementById("fontSizeValue")
+      const modeSelect = document.getElementById("modeSelect")
+      const exportBtn = document.getElementById("exportBtn")
+      const copyBtn = document.getElementById("copyBtn")
+
+      const memoryStore = {}
+      const storage = {
+        getItem(key) {
+          try {
+            return window.localStorage.getItem(key)
+          } catch (error) {
+            return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null
+          }
+        },
+        setItem(key, value) {
+          try {
+            window.localStorage.setItem(key, value)
+          } catch (error) {
+            memoryStore[key] = String(value)
+          }
+        }
+      }
+
+      let mode = "writing"
+      const startTime = parseInt(storage.getItem("startTime"), 10) || Date.now()
+      storage.setItem("startTime", String(startTime))
+
+      function getJSON(key, fallback = {}) {
+        const raw = storage.getItem(key)
+        if (!raw) return fallback
+
+        try {
+          return JSON.parse(raw)
+        } catch (error) {
+          return fallback
+        }
+      }
+
+      function defaultTheme() {
+        return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
+      }
+
+      function getCurrentFont() {
+        const fontClass = textarea.className.match(/font-(\w+)/)
+        return fontClass ? fontClass[1] : "bookman"
+      }
+
+      function isMonospaceFont(font) {
+        return ["mono", "courier", "consolas"].includes(font)
+      }
+
+      function saveModeFont(currentMode, font) {
+        const modeFonts = getJSON("modeFonts")
+        modeFonts[currentMode] = font
+        storage.setItem("modeFonts", JSON.stringify(modeFonts))
+      }
+
+      function getModeFont(currentMode) {
+        return getJSON("modeFonts")[currentMode]
+      }
+
+      function updateFontSizePreview(value) {
+        fontSizeValue.textContent = `${value}px`
+        textarea.style.fontSize = `${value}px`
+        document.documentElement.style.setProperty("--font-size", `${value}px`)
+      }
+
+      function updateStats() {
+        const lines = textarea.value.split("\n").length
+        const words = textarea.value.split(/\s+/).filter((word) => word.length > 0).length
+        const chars = textarea.value.length
+        const seconds = Math.floor((Date.now() - startTime) / 1000)
+        const timeDisplay =
+          seconds < 60 ? `${seconds} elapsed seconds` :
+          seconds < 3600 ? `${Math.floor(seconds / 60)} elapsed minutes` :
+          `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m elapsed`
+
+        stats.textContent = `${lines} lines, ${words} words, ${chars} characters, ${timeDisplay}`
+      }
+
+      function addFontOption(value, text, isDisabled) {
+        const option = document.createElement("option")
+        option.value = value
+        option.text = text
+        option.selected = getCurrentFont() === value
+
+        if (isDisabled) {
+          option.disabled = true
+          option.style.color = "#888"
+        }
+
+        fontSelect.add(option)
+      }
+
+      function updateFontOptions() {
+        fontSelect.innerHTML = ""
+
+        addFontOption("sans", "Sans-serif", mode === "code")
+        addFontOption("verdana", "Verdana", mode === "code")
+        addFontOption("tahoma", "Tahoma", mode === "code")
+        addFontOption("trebuchet", "Trebuchet MS", mode === "code")
+
+        addFontOption("serif", "Georgia", mode === "code")
+        addFontOption("garamond", "Garamond", mode === "code")
+        addFontOption("palatino", "Palatino", mode === "code")
+        addFontOption("bookman", "Bookman", mode === "code")
+
+        addFontOption("mono", "Monospace", false)
+        addFontOption("courier", "Courier New", false)
+        addFontOption("consolas", "Consolas", false)
+
+        if (fontSelect.value !== getCurrentFont()) fontSelect.value = getCurrentFont()
+      }
+
+      function fontToUse(settings) {
+        return getModeFont(mode) || settings.font || (mode === "code" ? "mono" : "sans")
+      }
+
+      function applyTheme(theme) {
+        themeSelect.value = theme
+        document.documentElement.setAttribute("data-theme", theme)
+      }
+
+      function applyFontSize(fontSize) {
+        const normalizedSize = fontSize || 18
+        fontSizeInput.value = normalizedSize
+        updateFontSizePreview(normalizedSize)
+      }
+
+      function applyFont(font) {
+        textarea.className = textarea.className.replace(/font-\w+/g, "").trim()
+        textarea.classList.add(`font-${font}`)
+      }
+
+      function applySettings(settings = {}) {
+        const storedSettings = getJSON("settings")
+        const mergedSettings = { ...storedSettings, ...settings }
+        const font = fontToUse(mergedSettings)
+
+        applyTheme(mergedSettings.theme || defaultTheme())
+        applyFontSize(mergedSettings.fontSize || 18)
+        applyFont(font)
+        updateFontOptions()
+
+        if (fontSelect && font) fontSelect.value = font
+      }
+
+      function updateSetting(setting, value) {
+        const settings = getJSON("settings")
+        settings[setting] = value
+        storage.setItem("settings", JSON.stringify(settings))
+
+        if (setting === "font") saveModeFont(mode, value)
+        applySettings({ [setting]: value })
+      }
+
+      function loadSettings() {
+        applySettings(getJSON("settings"))
+      }
+
+      function setMode(newMode) {
+        if (newMode !== mode) saveModeFont(mode, getCurrentFont())
+
+        mode = newMode
+        modeSelect.value = mode
+        storage.setItem("mode", mode)
+        loadSettings()
+
+        if (mode === "code" && !isMonospaceFont(getCurrentFont())) {
+          const savedCodeFont = getModeFont("code")
+          updateSetting("font", savedCodeFont || "mono")
+        }
+      }
+
+      function handleEnter(event) {
+        const selectionStart = textarea.selectionStart
+        const text = textarea.value
+
+        let lineStart = selectionStart
+        while (lineStart > 0 && text[lineStart - 1] !== "\n") lineStart -= 1
+
+        let indentation = ""
+        let i = lineStart
+        while (text[i] === " " || text[i] === "\t") {
+          indentation += text[i]
+          i += 1
+        }
+
+        if (indentation.length > 0) {
+          event.preventDefault()
+          const insertText = "\n" + indentation
+
+          if (typeof textarea.setRangeText === "function") {
+            textarea.setRangeText(insertText, selectionStart, selectionStart)
+            textarea.selectionStart = textarea.selectionEnd = selectionStart + insertText.length
+            saveText()
+          } else {
+            document.execCommand("insertText", false, insertText)
+          }
+        }
+      }
+
+      function handleTab(event) {
+        event.preventDefault()
+
+        if (textarea.selectionStart === textarea.selectionEnd) {
+          const position = textarea.selectionStart
+
+          if (!event.shiftKey) {
+            if (typeof textarea.setRangeText === "function") {
+              textarea.setRangeText("\t", position, position)
+              textarea.selectionStart = textarea.selectionEnd = position + 1
+              saveText()
+            } else {
+              document.execCommand("insertText", false, "\t")
+            }
+          } else if (position > 0 && textarea.value[position - 1] === "\t") {
+            if (typeof textarea.setRangeText === "function") {
+              textarea.setRangeText("", position - 1, position)
+              textarea.selectionStart = textarea.selectionEnd = position - 1
+              saveText()
+            } else {
+              textarea.selectionStart = position - 1
+              textarea.selectionEnd = position
+              document.execCommand("delete")
+            }
+          }
+
+          return
+        }
+
+        const selectionStart = textarea.selectionStart
+        const selectionEnd = textarea.selectionEnd
+        const text = textarea.value
+
+        let start = selectionStart
+        while (start > 0 && text[start - 1] !== "\n") start -= 1
+
+        let end = selectionEnd
+        while (end < text.length && text[end] !== "\n") end += 1
+
+        const selectedText = text.substring(start, end)
+        const lines = selectedText.split("\n")
+        const processedLines = lines.map((line) => {
+          if (line.length === 0) return line
+
+          if (event.shiftKey) {
+            if (line.startsWith("\t")) return line.substring(1)
+            if (line.startsWith("    ")) return line.substring(4)
+            return line
+          }
+
+          return "\t" + line
+        })
+
+        const newText = processedLines.join("\n")
+
+        if (typeof textarea.setRangeText === "function") {
+          textarea.setRangeText(newText, start, end)
+          textarea.selectionStart = start
+          textarea.selectionEnd = start + newText.length
+        } else {
+          textarea.value = text.substring(0, start) + newText + text.substring(end)
+          textarea.selectionStart = start
+          textarea.selectionEnd = start + newText.length
+        }
+
+        saveText()
+      }
+
+      function setupTabHandler() {
+        textarea.addEventListener("keydown", (event) => {
+          if (mode !== "code") return
+
+          const isSelection = textarea.selectionStart !== textarea.selectionEnd
+          if (event.key === "Enter" && !isSelection) handleEnter(event)
+          if (event.key === "Tab") handleTab(event)
+        })
+      }
+
+      function saveText() {
+        storage.setItem("text", textarea.value)
+        updateStats()
+      }
+
+      function exportText() {
+        const blob = new Blob([textarea.value], { type: "text/plain;charset=utf-8" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = "textbox-export.txt"
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+      }
+
+      function showTemporaryButtonState(button, svgMarkup, duration = 1500) {
+        const original = button.innerHTML
+        button.innerHTML = svgMarkup
+        window.setTimeout(() => {
+          button.innerHTML = original
+        }, duration)
+      }
+
+      function fallbackCopyText() {
+        textarea.focus()
+        textarea.select()
+
+        try {
+          const copied = document.execCommand("copy")
+          if (copied) {
+            showTemporaryButtonState(
+              copyBtn,
+              '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l3 3 5-6"/></svg>'
+            )
+          }
+        } catch (error) {
+          console.error("Copy failed", error)
+        }
+      }
+
+      function copyText() {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(textarea.value).then(() => {
+            showTemporaryButtonState(
+              copyBtn,
+              '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l3 3 5-6"/></svg>'
+            )
+          }).catch(fallbackCopyText)
+          return
+        }
+
+        fallbackCopyText()
+      }
+
+      function setupEventListeners() {
+        textarea.addEventListener("input", saveText)
+        themeSelect.addEventListener("change", () => updateSetting("theme", themeSelect.value))
+        fontSelect.addEventListener("change", () => updateSetting("font", fontSelect.value))
+        fontSizeInput.addEventListener("input", () => updateFontSizePreview(fontSizeInput.value))
+        fontSizeInput.addEventListener("change", () => updateSetting("fontSize", fontSizeInput.value))
+        modeSelect.addEventListener("change", () => setMode(modeSelect.value))
+        exportBtn.addEventListener("click", exportText)
+        copyBtn.addEventListener("click", copyText)
+        setupTabHandler()
+      }
+
+      function init() {
+        setupEventListeners()
+        mode = storage.getItem("mode") || "writing"
+        textarea.value = storage.getItem("text") || DEFAULT_TEXT
+        setMode(mode)
+        updateStats()
+        window.setInterval(updateStats, 1000)
+        textarea.focus()
+      }
+
+      document.addEventListener("DOMContentLoaded", init)
+    </script>
+  </body>
+</html>
