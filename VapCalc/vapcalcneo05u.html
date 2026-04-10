@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VapCalcNeo | Vaporizer Efficiency Calculator</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <!-- Styles and Fonts (TailwindCSS, etc.) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="preload" href="fonts/eurostile_extended_black.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="fonts/Eurostile Extended Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Font loading for Eurostile */
+    @font-face {
+      font-family: 'Eurostile Black';
+      src: url('fonts/eurostile_extended_black.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    
+    @font-face {
+      font-family: 'Eurostile Extended Regular';
+      src: url('fonts/Eurostile Extended Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* Custom styles, keeping Eurostile font etc. */
+    body {
+      background-color: black;
+      color: limegreen;
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
+
+    input, select, button {
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+      padding: 8px;
+      margin: 4px 0;
+      border-radius: 5px;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 1.8em;
+      position: relative;
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+    
+    input[type=number]::-moz-number-text {
+      opacity: 1 !important;
+    }
+    
+    input[type=number]::-moz-number-spin-box,
+    input[type=number]::-moz-number-spin-up,
+    input[type=number]::-moz-number-spin-down {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .number-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 200px;
+    }
+
+    .number-input-wrapper input[type=number] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    input:focus, 
+    select:focus, 
+    button:focus,
+    .spinner-btn:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    input:focus:not(:focus-visible) {
+      outline: none;
+    }
+    
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible,
+    .spinner-btn:focus-visible {
+      outline: 2px solid lime !important;
+      outline-offset: 1px;
+    }
+
+    .spinner-btn {
+      position: absolute;
+      right: -0.2em;
+      width: 4.8em;
+      background: #000;
+      color: orangered;
+      border: 1px solid rgba(0, 255, 0, 0.604);
+      font-size: 0.8em;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+      padding: 0;
+      margin: 0;
+      height: calc(40% - 0.2em);
+      box-sizing: border-box;
+    }
+
+    .spinner-up {
+      top: 0.2em;
+      border-bottom: 1px solid #005300;
+      border-radius: 0 4px 0 0;
+    }
+
+    .spinner-down {
+      bottom: 0.2em;
+      border-radius: 0 0 4px 0;
+    }
+
+    .number-input-wrapper:hover .spinner-btn {
+      opacity: 1;
+    }
+
+    .number-input-wrapper:hover .history-btn,
+    .number-input-wrapper:focus-within .history-btn {
+      opacity: 1;
+    }
+
+    .history-btn {
+      right: 4.9em;
+      width: 2.3em;
+      color: gold;
+      font-size: 0.75em;
+    }
+
+    .history-up {
+      top: 0.2em;
+      border-radius: 4px 0 0 0;
+    }
+
+    .history-down {
+      bottom: 0.2em;
+      border-radius: 0 0 0 4px;
+    }
+
+    .spinner-btn:focus {
+      outline: none;
+    }
+
+    #temperature,
+    #heatSoak {
+      min-width: 80px;
+    }
+
+    button:hover { opacity: 0.8; }
+
+    table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+      background: #111;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #005300;
+      text-align: center;
+    }
+    th {
+      background: #000;
+    }
+    tr:hover {
+      background: #222;
+    }
+
+    .section-card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+
+    .result-display {
+      margin-top: 10px;
+      padding: 15px;
+      border: 2px solid limegreen;
+      border-radius: 8px;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      flex: 1 1 200px;
+      text-align: center;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #005300;
+    }
+    .stat-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: limegreen;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: black;
+      border-radius: 8px;
+      border: 1px solid limegreen;
+      box-sizing: border-box;
+      width: 100%;
+      height: 400px;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      color: limegreen;
+      cursor: pointer;
+      padding: 5px;
+      transition: opacity 0.2s;
+    }
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+    .remove-btn {
+      color: orangered;
+    }
+    .remove-btn:hover {
+      color: #ff4444;
+    }
+
+    .removed-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #005300;
+    }
+    .section-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px 0;
+      border-bottom: 1px solid #005300;
+    }
+    .toggle-icon {
+      font-size: 1.5em;
+      transition: transform 0.2s;
+    }
+    .removed-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .removed-container.open {
+      max-height: 1000px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+    .modal-content {
+      background-color: #222;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #005300;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    .close-modal {
+      color: limegreen;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-modal:hover {
+      color: #00FF00;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 20px;
+      padding: 0px 20px 20px;
+      width: 100vw;
+      max-width: 100%;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    #divider {
+      width: 5px;
+      background: #333;
+      cursor: col-resize;
+    }
+
+    #efficiencyChart {
+      border-color: limegreen;
+    }
+
+    .column:nth-child(2) {
+      flex: 2;
+      padding-right: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        flex-direction: column;
+        padding: 20px 10px;
+      }
+
+      .column {
+        flex: 1;
+      }
+
+      .column:nth-child(2) {
+        padding-right: 10px;
+      }
+
+      #divider {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stat-card {
+        flex: 1 1 100%;
+      }
+    }
+
+    .font-euro-bold {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
+
+    .font-euro-regular {
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<header class="text-center p-6" style="padding-top: 20px; padding-bottom:0px;">
+  <div class="inline relative group">
+    <span id="vaporizerName" class="text-4xl text-gray-300 cursor-pointer font-euro-regular transition-all">QR Baller</span>
+    
+    <button 
+      class="absolute top-0 left-0 text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="editVapeName()"
+      style="transform: translateY(-100%); left: 1rem;"
+      title="Edit Name"
+    >✎</button>
+  
+    <button 
+      class="absolute text-xs text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="toggleVapeBold()"
+      style="top: 1.2rem; left: 1rem;"
+      title="Toggle Bold Style"
+    >🅑</button>
+
+  </div>  
+  <h1 class="text-4xl text-green-500 inline"> | </h1>
+  <h1 class="text-4xl text-red-500 inline">Vaporizer Efficiency Calculator</h1>
+  <p class="mt-2">Track, analyze, and optimize your vaporizer sessions</p>
+</header>
+
+<div class="container" style="flex: 1;">
+  <div class="column left">
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Session Calculator</h2>
+
+      <label>Temperature (°F)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="temperature" min="300" max="500" value="430" data-history-key="temperature">
+      </div>
+
+      <br><br>
+
+      <label>Heat Soak (seconds)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="heatSoak" min="0" max="120" value="40" data-history-key="heatSoak">
+      </div>
+
+      <br><br>
+
+      <label>Starting Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="startingMass" step="0.001" min="0" value="0.200">
+      </div>
+
+      <br><br>
+
+      <label>Ending Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="endingMass" step="0.001" min="0" value="0.115">
+      </div>
+
+      <br><br>
+
+      <label>Mass with Concentrate (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="massWithConcentrate" step="0.001" min="0" placeholder="0.000">
+      </div>
+
+      <br><br>
+
+      <button id="calculateBtn">Calculate Efficiency</button>
+      <button id="addLogBtn">Add to Log</button>
+
+      <br><br>
+      <button onclick="resetCachedForm()">Reset Form</button>
+      <br><br>
+
+      <div class="result-display" id="resultDisplay">
+        <h3 class="text-xl mb-2">Extraction Results</h3>
+        <p>Mass Lost: <span id="massLost">0.000</span> g</p>
+        <p>Wax Mass: <span id="waxMass">0.0</span> mg</p>
+        <p>Efficiency: <span id="efficiency">0.0</span>%</p>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Statistics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-title">Avg. Efficiency</div>
+          <div class="stat-value" id="avgEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Max Efficiency</div>
+          <div class="stat-value" id="maxEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Temperature</div>
+          <div class="stat-value" id="avgTemperature">0°F</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Heat Soak</div>
+          <div class="stat-value" id="avgHeatSoak">0s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="divider"></div>
+
+  <div class="column right">
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Visual Analysis</h2>
+      <div class="chart-container">
+        <canvas id="efficiencyChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="tempVsEfficiencyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Session Log</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Trial #</th>
+            <th>Temp (°F)</th>
+            <th>Heat Soak (s)</th>
+            <th>Start Mass (g)</th>
+            <th>Wax Mass (mg)</th>
+            <th>End Mass (g)</th>
+            <th>Mass Lost (g)</th>
+            <th>Efficiency (%)</th>
+            <th>🕒</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+
+      <div class="action-buttons">
+        <button id="downloadCSVBtn">Download CSV</button>
+        <input type="file" id="csvUpload" accept=".csv" style="display: none;"/>
+        <button id="uploadCSVBtn">Upload CSV</button>
+      </div>
+    </div>
+
+    <div class="removed-section">
+      <div class="section-toggle" id="removedToggle">
+        <h3>Removed Trials</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="removed-container" id="removedContainer">
+        <table id="removedTable">
+          <thead>
+            <tr>
+              <th>Trial #</th>
+              <th>Temp (°F)</th>
+              <th>Heat Soak (s)</th>
+              <th>Start Mass (g)</th>
+              <th>Wax Mass (mg)</th>
+              <th>End Mass (g)</th>
+              <th>Mass Lost (g)</th>
+              <th>Efficiency (%)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="removedBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeModal">×</span>
+    <h2 class="modal-title">Edit Trial</h2>
+
+    <form id="editForm" class="modal-form">
+      <div class="form-group">
+        <label for="editTemperature">Temperature (°F)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editTemperature" min="300" max="500">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase temperature">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease temperature">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editHeatSoak">Heat Soak (seconds)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editHeatSoak" min="0" max="120">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase heat soak">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease heat soak">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editStartingMass">Starting Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editStartingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase starting mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease starting mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editEndingMass">Ending Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editEndingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase ending mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease ending mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editConcentrateMass">Mass with Concentrate (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editConcentrateMass" step="0.001" min="0" placeholder="0.000">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase mass with concentrate">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease mass with concentrate">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="grid-column: span 2">
+        <div class="result">
+          <p>Mass Lost: <span id="editMassLost">0.000</span> g</p>
+          <p>Efficiency: <span id="editEfficiency">0.0</span>%</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-buttons">
+      <button id="cancelEdit" class="remove-btn">Cancel</button>
+      <button id="saveEdit" class="edit-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let sessionLog = [];
+let removedLog = [];
+let currentEditIndex = null;
+
+let efficiencyChart;
+let tempVsEfficiencyChart;
+
+const cachedFields = [
+  'temperature',
+  'heatSoak',
+  'startingMass',
+  'endingMass',
+  'massWithConcentrate'
+];
+
+const historyState = {
+  temperature: { index: -1 },
+  heatSoak: { index: -1 }
+};
+
+function normalizeHistoryValue(key, value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return key === 'temperature' ? String(Math.round(numeric)) : String(numeric);
+}
+
+function getHistoryValueKey(key) {
+  return key === 'temperature' ? 'temp' : 'heatSoak';
+}
+
+function getHistoryEntriesSorted(key) {
+  const valueKey = getHistoryValueKey(key);
+  const entries = [];
+
+  (sessionLog || []).forEach((entry, index) => {
+    if (entry && entry[valueKey] !== undefined && entry[valueKey] !== null) {
+      entries.push({
+        entry,
+        sourceRank: 1,
+        orderRank: index
+      });
+    }
+  });
+
+  (removedLog || []).forEach((entry, index) => {
+    if (entry && entry[valueKey] !== undefined && entry[valueKey] !== null) {
+      entries.push({
+        entry,
+        sourceRank: 0,
+        orderRank: index
+      });
+    }
+  });
+
+  entries.sort((a, b) => {
+    const timeA = Date.parse(a.entry?.timestamp || '');
+    const timeB = Date.parse(b.entry?.timestamp || '');
+
+    const hasTimeA = Number.isFinite(timeA);
+    const hasTimeB = Number.isFinite(timeB);
+
+    if (hasTimeA && hasTimeB && timeA !== timeB) {
+      return timeB - timeA;
+    }
+
+    if (hasTimeA !== hasTimeB) {
+      return hasTimeB - hasTimeA;
+    }
+
+    if (a.sourceRank !== b.sourceRank) {
+      return b.sourceRank - a.sourceRank;
+    }
+
+    return b.orderRank - a.orderRank;
+  });
+
+  return entries.map(item => item.entry);
+}
+
+function getDerivedHistoryValues(key) {
+  const valueKey = getHistoryValueKey(key);
+  const seen = new Set();
+  const values = [];
+
+  getHistoryEntriesSorted(key).forEach(entry => {
+    const normalized = normalizeHistoryValue(key, entry[valueKey]);
+    if (normalized === null || seen.has(normalized)) return;
+    seen.add(normalized);
+    values.push(normalized);
+  });
+
+  return values;
+}
+
+function cycleHistoryValue(input, direction) {
+  if (!input) return;
+
+  const key = input.dataset.historyKey;
+  if (!key || !historyState[key]) return;
+
+  const history = getDerivedHistoryValues(key);
+  if (!history.length) return;
+
+  const state = historyState[key];
+
+  if (state.index === -1) {
+    state.index = direction > 0 ? 0 : history.length - 1;
+  } else {
+    state.index = Math.max(0, Math.min(history.length - 1, state.index + direction));
+  }
+
+  input.value = history[state.index];
+  try {
+    localStorage.setItem(`cache_${input.id}`, input.value);
+  } catch (e) {
+    console.warn('Failed to cache history selection', e);
+  }
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function resetHistoryCursor(key) {
+  if (historyState[key]) {
+    historyState[key].index = -1;
+  }
+}
+
+// -----------------------------------------------------------
+// SAFE GRADIENT HELPERS (no memory leak, cached per chart)
+// -----------------------------------------------------------
+
+function makeVerticalGradient(chart, top, mid, bottom) {
+  const area = chart.chartArea;
+  if (!area) return bottom; // Fallback before layout
+
+  const ctx = chart.ctx;
+
+  // Cache per-chart so we don't remake gradients on each update
+  if (!chart._cachedGradient) {
+    const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+    g.addColorStop(0, top);
+    g.addColorStop(0.5, mid);
+    g.addColorStop(1, bottom);
+    chart._cachedGradient = g;
+  }
+
+  return chart._cachedGradient;
+}
+
+function getMaskedPointColor(chart, value) {
+  const area = chart.chartArea;
+  const y = chart.scales.y;
+  if (!area || !y) return "lime";
+
+  const px = y.getPixelForValue(value);
+  const ratio = (px - area.top) / (area.bottom - area.top);
+
+  const clamp = v => Math.min(1, Math.max(0, v));
+  const t = clamp(ratio);
+
+  // Gradient stops
+  const top =  [255,  69, 0];
+  const mid =  [255, 215, 0];
+  const bot =  [0, 255, 0];
+
+  function lerp(a,b,t) { return a + (b - a) * t; }
+
+  let r,g,b;
+  if (t <= 0.5) {
+    const k = t * 2;
+    r = lerp(top[0], mid[0], k);
+    g = lerp(top[1], mid[1], k);
+    b = lerp(top[2], mid[2], k);
+  } else {
+    const k = (t - 0.5) * 2;
+    r = lerp(mid[0], bot[0], k);
+    g = lerp(mid[1], bot[1], k);
+    b = lerp(mid[2], bot[2], k);
+  }
+
+  return `rgb(${r},${g},${b})`;
+}
+
+// -----------------------------------------------------------
+// FOCUSED GRADIENT: bounded only to actual plotted data range
+// -----------------------------------------------------------
+// "Zoomed" vertical gradient that is stable & cached.
+// It uses the full Y-axis like vapcalcneo03, but lets you shrink
+// the active gradient band so the gold stripe is narrower.
+function makeVerticalGradientFocused(chart, datasetIndex, topColor, midColor, bottomColor) {
+  const { ctx, chartArea, scales } = chart;
+  if (!chartArea || !scales?.y) return bottomColor;
+
+  const yScale = scales.y;
+  const axisMin = yScale.min;
+  const axisMax = yScale.max;
+
+  if (!Number.isFinite(axisMin) || !Number.isFinite(axisMax)) {
+    return bottomColor;
+  }
+
+  const span = axisMax - axisMin || 1;
+  const midVal = (axisMax + axisMin) / 2;
+
+  // 0 < ZOOM_FACTOR <= 1
+  // Smaller = tighter vertical band (= *narrower* gold stripe)
+  const ZOOM_FACTOR = 1;  // try 0.4, 0.3, etc. to shrink further
+
+  const halfSpan = (span * ZOOM_FACTOR) / 2;
+  const gradMax = midVal + halfSpan;
+  const gradMin = midVal - halfSpan;
+
+  const topPx = yScale.getPixelForValue(gradMax);
+  const botPx = yScale.getPixelForValue(gradMin);
+
+  const key = `_focusedGrad_${datasetIndex}`;
+  const prev = chart[key];
+
+  if (prev &&
+      prev._min === gradMin &&
+      prev._max === gradMax &&
+      prev._topPx === topPx &&
+      prev._botPx === botPx) {
+    return prev.gradient;
+  }
+
+  const g = ctx.createLinearGradient(0, topPx, 0, botPx);
+  g.addColorStop(0,   topColor);
+  g.addColorStop(0.5, midColor);
+  g.addColorStop(1,   bottomColor);
+
+  chart[key] = {
+    gradient: g,
+    _min: gradMin,
+    _max: gradMax,
+    _topPx: topPx,
+    _botPx: botPx
+  };
+
+  return g;
+}
+
+
+// -----------------------------------------------------------
+// BOX PLOT HELPERS (no external plugins)
+// -----------------------------------------------------------
+
+// Quantile with linear interpolation (expects sorted ascending)
+function quantileSorted(sorted, p) {
+  const n = sorted.length;
+  if (n === 0) return NaN;
+  if (n === 1) return sorted[0];
+  const idx = (n - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const h = idx - lo;
+  return (1 - h) * sorted[lo] + h * sorted[hi];
+}
+
+function buildTempBoxStats(log) {
+  const groups = new Map();
+
+  (log || []).forEach(e => {
+    const t = Number(e?.temp);
+    const v = Number(e?.efficiency);
+    const hs = Number(e?.heatSoak);
+    if (!Number.isFinite(t) || !Number.isFinite(v)) return;
+
+    if (!groups.has(t)) groups.set(t, { eff: [], soak: [] });
+    const bucket = groups.get(t);
+    bucket.eff.push(v);
+    if (Number.isFinite(hs)) bucket.soak.push(hs);
+  });
+
+  const temps = Array.from(groups.keys()).sort((a, b) => a - b);
+  const labels = temps.map(t => `${t}°F`);
+
+  const stats = [];
+  const outliers = [];
+
+  temps.forEach((t, idx) => {
+    const bucket = groups.get(t) || { eff: [], soak: [] };
+    const vals = (bucket.eff || []).slice().sort((a, b) => a - b);
+    const avgHeatSoak = (bucket.soak && bucket.soak.length)
+      ? (bucket.soak.reduce((s, x) => s + x, 0) / bucket.soak.length)
+      : NaN;
+    const n = vals.length;
+
+    const q1 = quantileSorted(vals, 0.25);
+    const median = quantileSorted(vals, 0.50);
+    const q3 = quantileSorted(vals, 0.75);
+    const iqr = (Number.isFinite(q3) && Number.isFinite(q1)) ? (q3 - q1) : 0;
+
+    const lowerFence = q1 - 1.5 * iqr;
+    const upperFence = q3 + 1.5 * iqr;
+
+    const inliers = vals.filter(v => v >= lowerFence && v <= upperFence);
+    const min = inliers.length ? inliers[0] : vals[0];
+    const max = inliers.length ? inliers[inliers.length - 1] : vals[vals.length - 1];
+
+    // Collect outliers as points
+    vals.forEach(v => {
+      if (v < lowerFence || v > upperFence) {
+        outliers.push({ x: labels[idx], y: v });
+      }
+    });
+
+    stats.push({
+      temp: t,
+      label: labels[idx],
+      n,
+      avgHeatSoak,
+      min,
+      q1,
+      median,
+      q3,
+      max,
+      iqr,
+      lowerFence,
+      upperFence
+    });
+  });
+
+  return { labels, stats, outliers };
+}
+
+// Draw whiskers + median line + caps on top of the IQR floating bars
+const boxWhiskerPlugin = {
+  id: 'vapcalcBoxWhiskers',
+  afterDatasetsDraw(chart) {
+    const stats = chart?.$boxStats;
+    if (!Array.isArray(stats) || !stats.length) return;
+
+    const xScale = chart.scales?.x;
+    const yScale = chart.scales?.y;
+    if (!xScale || !yScale) return;
+
+    const ctx = chart.ctx;
+    ctx.save();
+
+    const stroke = 'limegreen';
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle = stroke;
+    ctx.lineWidth = 2;
+
+    // Estimate a sensible half-width for box/whisker caps
+    let capHalf = 10;
+    if (stats.length >= 2) {
+      const x0 = xScale.getPixelForValue(stats[0].label);
+      const x1 = xScale.getPixelForValue(stats[1].label);
+      const step = Math.abs(x1 - x0) || 1;
+      capHalf = Math.max(6, Math.min(18, step * 0.18));
+    }
+
+    const boxHalf = capHalf * 1.6;
+
+    stats.forEach(s => {
+      const x = xScale.getPixelForValue(s.label);
+      const yMin = yScale.getPixelForValue(s.min);
+      const yQ1 = yScale.getPixelForValue(s.q1);
+      const yMed = yScale.getPixelForValue(s.median);
+      const yQ3 = yScale.getPixelForValue(s.q3);
+      const yMax = yScale.getPixelForValue(s.max);
+
+      // Whisker lines
+      ctx.beginPath();
+      ctx.moveTo(x, yMin);
+      ctx.lineTo(x, yQ1);
+      ctx.moveTo(x, yQ3);
+      ctx.lineTo(x, yMax);
+      ctx.stroke();
+
+      // T-caps at min/max
+      ctx.beginPath();
+      ctx.moveTo(x - capHalf, yMin);
+      ctx.lineTo(x + capHalf, yMin);
+      ctx.moveTo(x - capHalf, yMax);
+      ctx.lineTo(x + capHalf, yMax);
+      ctx.stroke();
+
+      // Median line across the box
+      ctx.beginPath();
+      ctx.moveTo(x - boxHalf, yMed);
+      ctx.lineTo(x + boxHalf, yMed);
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+};
+
+try { Chart.register(boxWhiskerPlugin); } catch (e) {}
+
+// -----------------------------------------------------------
+// CHART INITIALIZATION
+// -----------------------------------------------------------
+
+function initializeCharts() {
+  const c1 = document.getElementById('efficiencyChart');
+  const c2 = document.getElementById('tempVsEfficiencyChart');
+  if (!c1 || !c2) return;
+
+  const ctx1 = c1.getContext('2d');
+  const ctx2 = c2.getContext('2d');
+
+  efficiencyChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Efficiency (%)',
+        data: [],
+        borderColor: ctx =>
+          makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: false,
+          min: 25,
+          max: 60,
+          ticks: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 12
+            }
+          },
+          title: {
+            display: true,
+            text: 'Efficiency (%)',
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Black',
+              size: 14
+            }
+          },
+          grid: {
+            color: 'rgba(0, 255, 0, 0.1)'
+          }
+        },
+        x: {
+          ticks: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 12
+            }
+          },
+          title: {
+            display: true,
+            text: 'Trial Number',
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Black',
+              size: 14
+            }
+          },
+          grid: {
+            color: 'rgba(0, 255, 0, 0.1)'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 14
+            },
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Vaporization Efficiency Over Time',
+          font: {
+            family: 'Eurostile Black',
+            size: 16
+          },
+          color: 'limegreen',
+          padding: { top: 10, bottom: 20 }
+        },
+        tooltip: {
+          backgroundColor: '#111',
+          titleColor: 'limegreen',
+          bodyColor: 'limegreen',
+          borderColor: (ctx) => makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+          borderWidth: 1,
+          titleFont: {
+            family: 'Eurostile Black',
+            size: 14
+          },
+          bodyFont: {
+            family: 'Eurostile Extended Regular',
+            size: 13
+          }
+        }
+      }
+    }
+  });
+
+  tempVsEfficiencyChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        // Floating bar from Q1 -> Q3 (IQR box)
+        {
+          label: 'Interquartile Range',
+          data: [],
+          backgroundColor: 'rgba(0, 255, 0, 0.18)',
+          borderColor: 'limegreen',
+          borderWidth: 2,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
+        },
+        // Outliers as points (optional)
+        {
+          label: 'Outliers',
+          type: 'scatter',
+          data: [],
+          borderColor: 'limegreen',
+          backgroundColor: 'limegreen',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: true },
+      scales: {
+        y: {
+          min: (scale) => {
+            const stats = scale.chart.$boxStats;
+            if (!stats || stats.length === 0) return 0;
+            const minValue = Math.min(...stats.map(s => s.min));
+            return Math.max(0, minValue - 5);
+          },
+          max: (scale) => {
+            const stats = scale.chart.$boxStats;
+            if (!stats || stats.length === 0) return 100;
+            const maxValue = Math.max(...stats.map(s => s.max));
+            return Math.min(100, maxValue + 5);
+          },
+          ticks: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 12 }
+          },
+          title: {
+            display: true,
+            text: 'Efficiency (%)',
+            color: 'limegreen',
+            font: { family: 'Eurostile Black', size: 14 }
+          },
+          grid: { color: 'rgba(0, 255, 0, 0.1)' }
+        },
+        x: {
+          type: 'category',
+          ticks: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 12 }
+          },
+          title: {
+            display: true,
+            text: 'Temperature (°F)',
+            color: 'limegreen',
+            font: { family: 'Eurostile Black', size: 14 }
+          },
+          grid: { color: 'rgba(0, 255, 0, 0.1)' }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 14 },
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Temperature vs. Vaporization Efficiency',
+          font: { family: 'Eurostile Black', size: 16 },
+          color: 'limegreen',
+          padding: { top: 10, bottom: 20 }
+        },
+        tooltip: {
+          backgroundColor: '#111',
+          titleColor: 'limegreen',
+          bodyColor: 'limegreen',
+          borderColor: (ctx) => makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+          borderWidth: 1,
+          titleFont: { family: 'Eurostile Black', size: 14 },
+          bodyFont: { family: 'Eurostile Extended Regular', size: 13 },
+          callbacks: {
+            title: function(items) {
+              const i = items?.[0]?.dataIndex ?? 0;
+              const s = tempVsEfficiencyChart?.$boxStats?.[i];
+              return s ? `Temp: ${s.temp}°F (n=${s.n})` : (items?.[0]?.label || '');
+            },
+            label: function(context) {
+              // Dataset 0 = box (IQR). Dataset 1 = outlier point.
+              if (context.datasetIndex === 1) {
+                return `Outlier: ${context.parsed.y.toFixed(1)}%`;
+              }
+              const i = context.dataIndex;
+              const s = tempVsEfficiencyChart?.$boxStats?.[i];
+              if (!s) return '';
+              return [
+                `Max: ${s.max.toFixed(1)}%`,
+                `Q3:   ${s.q3.toFixed(1)}%`,
+                `Median: ${s.median.toFixed(1)}%`,
+                `Q1:   ${s.q1.toFixed(1)}%`,
+                `Min:  ${s.min.toFixed(1)}%`,
+                `Avg. heat soak: ${Number.isFinite(s.avgHeatSoak) ? s.avgHeatSoak.toFixed(1) : '—'}s`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+  }
+
+function updateCharts() {
+  if (!efficiencyChart || !tempVsEfficiencyChart) return;
+
+  const labels = sessionLog.map((_, i) => `Trial ${i + 1}`);
+  const efficiencies = sessionLog.map(entry => entry.efficiency);
+
+  efficiencyChart.data.labels = labels;
+  efficiencyChart.data.datasets[0].data = efficiencies;
+  efficiencyChart.update();
+
+  // Temperature vs Efficiency -> box plots per temperature
+  const box = buildTempBoxStats(sessionLog);
+
+  tempVsEfficiencyChart.data.labels = box.labels;
+
+  // Dataset 0: IQR floating bars [q1, q3]
+  tempVsEfficiencyChart.data.datasets[0].data = box.stats.map(s => [s.q1, s.q3]);
+
+  // Dataset 1: outlier points (x must match category label)
+  tempVsEfficiencyChart.data.datasets[1].data = box.outliers;
+
+  // Attach stats for whisker drawing + tooltip
+  tempVsEfficiencyChart.$boxStats = box.stats;
+
+  tempVsEfficiencyChart.update();
+}
+
+function updateStats() {
+  if (sessionLog.length === 0) {
+    document.getElementById('avgEfficiency').textContent = '0.0%';
+    document.getElementById('maxEfficiency').textContent = '0.0%';
+    document.getElementById('avgTemperature').textContent = '0°F';
+    document.getElementById('avgHeatSoak').textContent = '0s';
+    return;
+  }
+
+  const avgEfficiency = sessionLog.reduce((s, e) => s + e.efficiency, 0) / sessionLog.length;
+  const maxEfficiency = Math.max(...sessionLog.map(e => e.efficiency));
+  const avgTemp = sessionLog.reduce((s, e) => s + e.temp, 0) / sessionLog.length;
+  const avgHeatSoak = sessionLog.reduce((s, e) => s + e.heatSoak, 0) / sessionLog.length;
+
+  document.getElementById('avgEfficiency').textContent = avgEfficiency.toFixed(1) + '%';
+  document.getElementById('maxEfficiency').textContent = maxEfficiency.toFixed(1) + '%';
+  document.getElementById('avgTemperature').textContent = avgTemp.toFixed(0) + '°F';
+  document.getElementById('avgHeatSoak').textContent = avgHeatSoak.toFixed(1) + 's';
+}
+
+function calculateEfficiency() {
+  const startingMass = parseFloat(document.getElementById('startingMass').value);
+  const endingMass = parseFloat(document.getElementById('endingMass').value);
+  const mwcRaw = document.getElementById('massWithConcentrate').value.trim();
+  let massWithConcentrate = parseFloat(mwcRaw);
+
+  if (mwcRaw === '' || isNaN(massWithConcentrate)) {
+    massWithConcentrate = startingMass;
+  }
+
+  if (isNaN(startingMass) || isNaN(endingMass)) {
+    alert('Please enter both Starting Mass and Ending Mass.');
+    return;
+  }
+
+  if (massWithConcentrate < startingMass || endingMass > massWithConcentrate) {
+    alert('Mass values are inconsistent.');
+    return;
+  }
+
+  const concentrateMass = massWithConcentrate - startingMass;
+  const massLost = massWithConcentrate - endingMass;
+  const efficiency = (massLost / massWithConcentrate) * 100;
+  const waxMassMg = concentrateMass * 1000;
+
+  document.getElementById('massLost').innerText = massLost.toFixed(3);
+  document.getElementById('efficiency').innerText = efficiency.toFixed(1);
+  document.getElementById('waxMass').innerText = waxMassMg.toFixed(1);
+}
+
+function addToLog() {
+  const temp = parseFloat(document.getElementById('temperature').value);
+  const heatSoak = parseFloat(document.getElementById('heatSoak').value);
+  const startingMass = parseFloat(document.getElementById('startingMass').value);
+  const endingMass = parseFloat(document.getElementById('endingMass').value);
+  const mwcRaw = document.getElementById('massWithConcentrate').value.trim();
+  const timestamp = new Date().toISOString();
+  let massWithConcentrate = parseFloat(mwcRaw);
+
+  if (mwcRaw === '' || isNaN(massWithConcentrate)) {
+    massWithConcentrate = startingMass;
+  }
+
+  if (isNaN(startingMass) || isNaN(endingMass)) {
+    alert('Please enter both Starting Mass and Ending Mass before logging.');
+    return;
+  }
+
+  if (massWithConcentrate < startingMass || endingMass > massWithConcentrate) {
+    alert('Mass values are inconsistent, cannot add to log.');
+    return;
+  }
+
+  const concentrateMass = massWithConcentrate - startingMass;
+  const massLost = massWithConcentrate - endingMass;
+  const efficiency = (massLost / massWithConcentrate) * 100;
+  const waxMass = concentrateMass * 1000;
+
+  sessionLog.push({
+    trialId: sessionLog.length + 1,
+    temp,
+    heatSoak,
+    startingMass,
+    endingMass,
+    concentrateMass,
+    massLost,
+    efficiency,
+    waxMass,
+    timestamp
+  });
+
+  updateLog();
+  updateCharts();
+  updateStats();
+}
+
+function createLogRow(entry, index) {
+  const tr = document.createElement('tr');
+
+  const cells = [
+    entry.trialId,
+    entry.temp,
+    entry.heatSoak.toFixed(1),
+    entry.startingMass.toFixed(3),
+    entry.waxMass.toFixed(1),
+    entry.endingMass.toFixed(3),
+    entry.massLost.toFixed(3),
+    entry.efficiency.toFixed(1)
+  ];
+
+  cells.forEach(val => {
+    const td = document.createElement('td');
+    td.textContent = val;
+    tr.appendChild(td);
+  });
+
+  const timeTd = document.createElement('td');
+  timeTd.textContent = '📅';
+  timeTd.title = formatTimestamp(entry.timestamp);
+  tr.appendChild(timeTd);
+
+  const actionsTd = document.createElement('td');
+  const editBtn = document.createElement('button');
+  editBtn.className = 'action-btn edit-btn';
+  editBtn.textContent = '✏️';
+  editBtn.addEventListener('click', () => editTrial(index));
+  actionsTd.appendChild(editBtn);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'action-btn remove-btn';
+  removeBtn.textContent = '🗑️';
+  removeBtn.addEventListener('click', () => removeTrial(index));
+  actionsTd.appendChild(removeBtn);
+
+  tr.appendChild(actionsTd);
+  return tr;
+}
+
+function updateLog() {
+  const logBody = document.getElementById('logBody');
+  if (!logBody) return;
+
+  const fragment = document.createDocumentFragment();
+  sessionLog.forEach((entry, index) => {
+    fragment.appendChild(createLogRow(entry, index));
+  });
+
+  logBody.replaceChildren(fragment);
+}
+
+function formatTimestamp(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const options = {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  };
+  const parts = date.toLocaleString('en-US', options).replace(',', '').split(' ');
+  return `${parts[0]}_${parts[1]}_${parts[2]}_${parts[3]}_${parts[4]}`;
+}
+
+function createRemovedRow(entry, index) {
+  const tr = document.createElement('tr');
+
+  const cells = [
+    entry.originalIndex,
+    entry.temp,
+    entry.heatSoak.toFixed(1),
+    entry.startingMass.toFixed(3),
+    entry.waxMass.toFixed(1),
+    entry.endingMass.toFixed(3),
+    entry.massLost.toFixed(3),
+    entry.efficiency.toFixed(1)
+  ];
+
+  cells.forEach(val => {
+    const td = document.createElement('td');
+    td.textContent = val;
+    tr.appendChild(td);
+  });
+
+  const actionsTd = document.createElement('td');
+  const restoreBtn = document.createElement('button');
+  restoreBtn.className = 'action-btn';
+  restoreBtn.textContent = '🔄';
+  restoreBtn.addEventListener('click', () => restoreTrial(index));
+  actionsTd.appendChild(restoreBtn);
+
+  tr.appendChild(actionsTd);
+  return tr;
+}
+
+function updateRemovedLog() {
+  const removedBody = document.getElementById('removedBody');
+  if (!removedBody) return;
+
+  const fragment = document.createDocumentFragment();
+  removedLog.forEach((entry, index) => {
+    fragment.appendChild(createRemovedRow(entry, index));
+  });
+
+  removedBody.replaceChildren(fragment);
+}
+
+function editTrial(index) {
+  currentEditIndex = index;
+  const entry = sessionLog[index];
+
+  document.getElementById('editTemperature').value = entry.temp;
+  document.getElementById('editHeatSoak').value = entry.heatSoak;
+  document.getElementById('editStartingMass').value = entry.startingMass;
+  document.getElementById('editEndingMass').value = entry.endingMass;
+  document.getElementById('editConcentrateMass').value = entry.concentrateMass || '';
+  document.getElementById('editMassLost').textContent = entry.massLost.toFixed(3);
+  document.getElementById('editEfficiency').textContent = entry.efficiency.toFixed(1);
+
+  document.getElementById('editModal').style.display = 'block';
+}
+
+function removeTrial(index) {
+  const entry = sessionLog[index];
+  entry.originalIndex = index + 1;
+  removedLog.push(entry);
+  sessionLog.splice(index, 1);
+
+  updateLog();
+  updateRemovedLog();
+  updateCharts();
+  updateStats();
+}
+
+function restoreTrial(index) {
+  const entry = removedLog[index];
+  sessionLog.push(entry);
+  removedLog.splice(index, 1);
+
+  updateLog();
+  updateRemovedLog();
+  updateCharts();
+  updateStats();
+}
+
+function saveEdit() {
+  if (currentEditIndex === null) return;
+
+  const temp = parseFloat(document.getElementById('editTemperature').value);
+  const heatSoak = parseFloat(document.getElementById('editHeatSoak').value);
+  const startingMass = parseFloat(document.getElementById('editStartingMass').value);
+  const endingMass = parseFloat(document.getElementById('editEndingMass').value);
+  let concentrateMass = parseFloat(document.getElementById('editConcentrateMass').value);
+
+  if (isNaN(concentrateMass) || concentrateMass < startingMass) {
+    concentrateMass = startingMass;
+  }
+
+  const massLost = concentrateMass - endingMass;
+  const efficiency = (massLost / concentrateMass) * 100;
+  const waxMass = (concentrateMass - startingMass) * 1000;
+
+  const entry = {
+    ...sessionLog[currentEditIndex],
+    temp,
+    heatSoak,
+    startingMass,
+    endingMass,
+    concentrateMass,
+    massLost,
+    efficiency,
+    waxMass
+  };
+
+  sessionLog[currentEditIndex] = entry;
+  currentEditIndex = null;
+
+  document.getElementById('editModal').style.display = 'none';
+  updateLog();
+  updateCharts();
+  updateStats();
+}
+
+function cancelEdit() {
+  currentEditIndex = null;
+  document.getElementById('editModal').style.display = 'none';
+}
+
+function downloadCSV() {
+  let csv = 'Trial,Temp,HeatSoak,StartingMass,EndingMass,ConcentrateMass,MassLost,Efficiency,WaxMass,Timestamp\n';
+  sessionLog.forEach(entry => {
+    csv += `${entry.trialId},${entry.temp},${entry.heatSoak},${entry.startingMass},${entry.endingMass},${entry.concentrateMass},${entry.massLost},${entry.efficiency},${entry.waxMass},"${entry.timestamp}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vaporizer_sessions.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function uploadCSV() {
+  const input = document.getElementById('csvUpload');
+  if (input) input.click();
+}
+
+function handleCSVUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const rows = text.split('\n');
+
+    rows.shift(); // header
+
+    sessionLog = rows.map(row => {
+      if (!row.trim()) return null;
+      const parts = row.split(',');
+      if (parts.length < 9) return null;
+
+      const [
+        trialId, temp, heatSoak, startingMass, endingMass,
+        concentrateMass, massLost, efficiency, waxMass, timestamp
+      ] = parts;
+
+
+      return {
+        trialId: parseInt(trialId),
+        temp: parseFloat(temp),
+        heatSoak: parseFloat(heatSoak),
+        startingMass: parseFloat(startingMass),
+        endingMass: parseFloat(endingMass),
+        concentrateMass: parseFloat(concentrateMass),
+        massLost: parseFloat(massLost),
+        efficiency: parseFloat(efficiency),
+        waxMass: parseFloat(waxMass),
+        timestamp: timestamp ? timestamp.trim().replace(/"/g, '') : null
+      };
+    }).filter(entry => entry && !isNaN(entry.temp));
+
+    updateLog();
+    updateCharts();
+    updateStats();
+  };
+  reader.readAsText(file);
+}
+
+function resetCachedForm() {
+  cachedFields.forEach(id => {
+    localStorage.removeItem(`cache_${id}`);
+    const input = document.getElementById(id);
+    if (input) input.value = '';
+    resetHistoryCursor(id);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initializeCharts();
+
+  cachedFields.forEach(id => {
+    const input = document.getElementById(id);
+    if (input && localStorage.getItem(`cache_${id}`) !== null) {
+      input.value = localStorage.getItem(`cache_${id}`);
+    }
+  });
+
+  cachedFields.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) {
+      input.addEventListener('input', () => {
+        localStorage.setItem(`cache_${id}`, input.value);
+        if (input.dataset.historyKey && document.activeElement === input) {
+          resetHistoryCursor(input.dataset.historyKey);
+        }
+      });
+    }
+  });
+
+  document.getElementById('calculateBtn').addEventListener('click', calculateEfficiency);
+  document.getElementById('addLogBtn').addEventListener('click', addToLog);
+  document.getElementById('downloadCSVBtn').addEventListener('click', downloadCSV);
+  document.getElementById('uploadCSVBtn').addEventListener('click', uploadCSV);
+  document.getElementById('csvUpload').addEventListener('change', handleCSVUpload);
+  document.getElementById('closeModal').addEventListener('click', cancelEdit);
+  document.getElementById('saveEdit').addEventListener('click', saveEdit);
+  document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+
+  // Custom spinners (guard so we don't duplicate buttons)
+  document.querySelectorAll('.number-input-wrapper').forEach(wrapper => {
+    const input = wrapper.querySelector('input[type=number]');
+    if (!input) return;
+
+    if (!wrapper.querySelector('.spinner-up')) {
+      const spinnerUp = document.createElement('button');
+      spinnerUp.className = 'spinner-btn spinner-up';
+      spinnerUp.type = 'button';
+      spinnerUp.setAttribute('aria-label', 'Increase value');
+      spinnerUp.setAttribute('tabindex', '-1');
+      spinnerUp.innerHTML = '▲';
+
+      spinnerUp.addEventListener('click', e => {
+        e.preventDefault();
+        input.stepUp();
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
+      wrapper.appendChild(spinnerUp);
+    }
+
+    if (!wrapper.querySelector('.spinner-down')) {
+      const spinnerDown = document.createElement('button');
+      spinnerDown.className = 'spinner-btn spinner-down';
+      spinnerDown.type = 'button';
+      spinnerDown.setAttribute('aria-label', 'Decrease value');
+      spinnerDown.setAttribute('tabindex', '-1');
+      spinnerDown.innerHTML = '▼';
+
+      spinnerDown.addEventListener('click', e => {
+        e.preventDefault();
+        input.stepDown();
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
+      wrapper.appendChild(spinnerDown);
+    }
+
+    if (input.dataset.historyKey && !wrapper.querySelector('.history-btn')) {
+      const historyUp = document.createElement('button');
+      historyUp.className = 'spinner-btn history-btn history-up';
+      historyUp.type = 'button';
+      historyUp.setAttribute('aria-label', `Previous ${input.dataset.historyKey} value`);
+      historyUp.setAttribute('tabindex', '-1');
+      historyUp.innerHTML = '⟰';
+
+      const historyDown = document.createElement('button');
+      historyDown.className = 'spinner-btn history-btn history-down';
+      historyDown.type = 'button';
+      historyDown.setAttribute('aria-label', `Next ${input.dataset.historyKey} value`);
+      historyDown.setAttribute('tabindex', '-1');
+      historyDown.innerHTML = '⟱';
+
+      historyUp.addEventListener('click', e => {
+        e.preventDefault();
+        cycleHistoryValue(input, 1);
+      });
+
+      historyDown.addEventListener('click', e => {
+        e.preventDefault();
+        cycleHistoryValue(input, -1);
+      });
+
+      wrapper.appendChild(historyUp);
+      wrapper.appendChild(historyDown);
+    }
+  });
+
+  document.getElementById('removedToggle').addEventListener('click', () => {
+    const container = document.getElementById('removedContainer');
+    container.classList.toggle('open');
+    const icon = document.querySelector('.toggle-icon');
+    icon.textContent = container.classList.contains('open') ? '▲' : '▼';
+  });
+});
+
+// Draggable divider
+(() => {
+  const divider = document.getElementById('divider');
+  const leftCol = document.querySelector('.column.left');
+  const rightCol = document.querySelector('.column.right');
+  if (!divider || !leftCol || !rightCol) return;
+
+  let isResizing = false;
+
+  function resize(e) {
+    const container = divider.parentElement;
+    const rect = container.getBoundingClientRect();
+    let leftWidth = ((e.clientX - rect.left) / rect.width) * 100;
+    leftWidth = Math.max(10, Math.min(90, leftWidth));
+    leftCol.style.flex = `0 0 ${leftWidth}%`;
+    rightCol.style.flex = `0 0 ${100 - leftWidth}%`;
+  }
+
+  function stopResize() {
+    if (!isResizing) return;
+    isResizing = false;
+    document.body.style.cursor = '';
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResize);
+  }
+
+  divider.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+  });
+})();
+
+// Sorting logic
+let sortDirection = 1;
+let lastSortColumn = null;
+
+const columnMap = [
+  null,          // Trial #
+  'temp',        // Temp
+  'heatSoak',    // Heat Soak
+  'startingMass',
+  'waxMass',
+  'endingMass',
+  'massLost',
+  'efficiency',
+  'timestamp'
+];
+
+function sortSessionLog(columnKey) {
+  if (!columnKey || !Array.isArray(sessionLog)) return;
+
+  if (lastSortColumn === columnKey) {
+    sortDirection *= -1;
+  } else {
+    sortDirection = 1;
+    lastSortColumn = columnKey;
+  }
+
+  sessionLog.sort((a, b) => {
+    const valA = a[columnKey];
+    const valB = b[columnKey];
+
+    if (columnKey === 'timestamp') {
+      return sortDirection * (new Date(valA) - new Date(valB));
+    }
+    return sortDirection * (((valA ?? 0) - (valB ?? 0)));
+  });
+
+  updateLog();
+  updateCharts();
+  updateStats();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sessionLogTable = document.querySelector('.section-card table');
+  if (!sessionLogTable) return;
+
+  const headers = sessionLogTable.querySelectorAll('thead tr th');
+  headers.forEach((th, idx) => {
+    const key = columnMap[idx];
+    if (!key) return;
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => sortSessionLog(key));
+  });
+});
+
+// Vape name + bold persistence
+function editVapeName() {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  const currentName = nameSpan.textContent || '';
+  const newName = prompt('Enter new vaporizer name:', currentName);
+
+  if (newName !== null) {
+    const trimmed = newName.trim();
+    if (trimmed) {
+      nameSpan.textContent = trimmed;
+      try {
+        localStorage.setItem('vapecalc_vapeName', trimmed);
+      } catch (e) {
+        console.warn('Failed to store vapecalc_vapeName', e);
+      }
+    }
+  }
+}
+
+function toggleVapeBold() {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  const isBold = nameSpan.classList.contains('font-euro-bold');
+
+  nameSpan.classList.toggle('font-euro-bold', !isBold);
+  nameSpan.classList.toggle('font-euro-regular', isBold);
+
+  try {
+    localStorage.setItem('vapecalc_vapeBold', !isBold ? 'bold' : 'regular');
+  } catch (e) {
+    console.warn('Failed to store vapecalc_vapeBold', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  try {
+    const savedName = localStorage.getItem('vapecalc_vapeName');
+    const savedBold = localStorage.getItem('vapecalc_vapeBold');
+
+    if (savedName) {
+      nameSpan.textContent = savedName;
+    }
+
+    if (savedBold === 'bold') {
+      nameSpan.classList.add('font-euro-bold');
+      nameSpan.classList.remove('font-euro-regular');
+    } else {
+      nameSpan.classList.add('font-euro-regular');
+      nameSpan.classList.remove('font-euro-bold');
+    }
+  } catch (e) {
+    console.warn('Failed to restore vape name style', e);
+  }
+});
+
+// Debounced localStorage persistence
+(function () {
+  const STORAGE = {
+    log: 'vapecalc_sessionLog_v1',
+    removed: 'vapecalc_removedLog_v1'
+  };
+
+  let saveTimer = null;
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE.log, JSON.stringify(sessionLog || []));
+      localStorage.setItem(STORAGE.removed, JSON.stringify(removedLog || []));
+    } catch (e) {
+      console.warn('VapCalc persistence: save failed', e);
+    }
+  }
+
+  function scheduleSave() {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+    saveTimer = setTimeout(saveState, 250);
+  }
+
+  window.vapecalcSaveState = saveState;
+  window.vapecalcScheduleSave = scheduleSave;
+
+  function loadState() {
+    try {
+      const savedLog = JSON.parse(localStorage.getItem(STORAGE.log) || '[]');
+      const savedRemoved = JSON.parse(localStorage.getItem(STORAGE.removed) || '[]');
+
+      if (Array.isArray(savedLog)) {
+        sessionLog = savedLog;
+      }
+      if (Array.isArray(savedRemoved)) {
+        removedLog = savedRemoved;
+      }
+
+      updateLog();
+      updateRemovedLog();
+      updateCharts();
+      updateStats();
+    } catch (e) {
+      console.warn('VapCalc persistence: load failed', e);
+    }
+  }
+
+  window.vapecalcLoadState = loadState;
+
+  window.vapecalcClearSavedState = function () {
+    try {
+      localStorage.removeItem(STORAGE.log);
+      localStorage.removeItem(STORAGE.removed);
+    } catch (e) {
+      console.warn('VapCalc persistence: clear failed', e);
+    }
+  };
+
+  function patchPersistence() {
+    if (window.__vapecalc_persist_patched) return;
+    window.__vapecalc_persist_patched = true;
+
+    const wrap = (name) => {
+      const orig = window[name];
+      if (typeof orig !== 'function') return;
+      window[name] = function (...args) {
+        const result = orig.apply(this, args);
+        try { scheduleSave(); } catch (_) {}
+        return result;
+      };
+    };
+
+    ['addToLog', 'removeTrial', 'restoreTrial', 'saveEdit', 'handleCSVUpload', 'sortSessionLog']
+      .forEach(wrap);
+
+    window.addEventListener('pagehide', saveState);
+    window.addEventListener('beforeunload', saveState);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      loadState();
+      patchPersistence();
+    }, 0);
+  });
+})();
+</script>
+
+</body>
+</html>
