@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redlib Subreddit Launcher</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f1115;
+      --panel: #171a21;
+      --text: #e8ecf1;
+      --muted: #9aa4b2;
+      --accent: #6aa9ff;
+      --border: #2a3140;
+      --input: #10141c;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #16202a;
+        --muted: #5b6978;
+        --accent: #2563eb;
+        --border: #d9e0ea;
+        --input: #ffffff;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.9rem;
+    }
+
+    p, .meta {
+      color: var(--muted);
+      margin-top: 0;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+      margin: 20px 0 8px;
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    select, button {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font: inherit;
+    }
+
+    select {
+      background: var(--input);
+      color: var(--text);
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+    }
+
+    .status {
+      margin-top: 12px;
+      min-height: 1.5em;
+      color: var(--muted);
+    }
+
+    .subreddit-section {
+      margin-top: 24px;
+    }
+
+    .subreddit-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .subreddit-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .subreddit-list a {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      background: transparent;
+    }
+
+    .subreddit-list a:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Redlib Subreddit Launcher</h1>
+      <p>Pick a Redlib instance, then open one of your saved subreddits on that instance.</p>
+
+      <form id="instance-form">
+        <div>
+          <label for="instance-select">Redlib instance</label>
+          <select id="instance-select" name="instance" required>
+            <option value="">Loading instances...</option>
+          </select>
+        </div>
+        <button type="submit">Use this instance</button>
+      </form>
+
+      <div class="status" id="status"></div>
+
+      <section class="subreddit-section" id="subreddit-section" hidden>
+        <div class="subreddit-header">
+          <h2 id="selected-instance-title" style="margin: 0; font-size: 1.2rem;">Saved subreddits</h2>
+          <span class="pill" id="selected-instance-meta"></span>
+        </div>
+        <ul class="subreddit-list" id="subreddit-list"></ul>
+      </section>
+
+      <p class="footer-note">
+        This page pulls instance data from <code>redlib-org/redlib-instances</code> at load time and stores your selected instance in local storage.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const INSTANCES_URL = 'https://raw.githubusercontent.com/redlib-org/redlib-instances/refs/heads/main/instances.json';
+
+    const SUBREDDITS = [
+      'abv',
+      'announcements',
+      'ballvapes',
+      'Boveda',
+      'cannabiscultivation',
+      'concentrates',
+      'copypasta',
+      'Dabs',
+      'fuckalegriaart',
+      'halaracannabis',
+      'hitsFromtheBong',
+      'jailbreak',
+      'legal',
+      'microgrowery',
+      'Milking',
+      'Qaromashop',
+      'RAWpapers',
+      'rosin',
+      'SDweed',
+      'StonerEngineering',
+      'stonerfood',
+      'StonerThoughts',
+      'TheRogueWaxWorks',
+      'trees',
+      'vaporents'
+    ];
+
+    const form = document.getElementById('instance-form');
+    const select = document.getElementById('instance-select');
+    const statusEl = document.getElementById('status');
+    const subredditSection = document.getElementById('subreddit-section');
+    const subredditList = document.getElementById('subreddit-list');
+    const selectedInstanceTitle = document.getElementById('selected-instance-title');
+    const selectedInstanceMeta = document.getElementById('selected-instance-meta');
+
+    const STORAGE_KEY = 'redlib-selected-instance';
+    let availableInstances = [];
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatInstanceLabel(instance) {
+      const endpoint = instance.url || instance.onion;
+      const parts = [endpoint];
+      if (instance.country) parts.push(instance.country);
+      if (instance.version) parts.push(instance.version);
+      if (instance.cloudflare) parts.push('Cloudflare');
+      return parts.join(' • ');
+    }
+
+    function buildSubredditList(baseUrl) {
+      subredditList.innerHTML = '';
+
+      for (const subreddit of SUBREDDITS) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `${baseUrl}/r/${encodeURIComponent(subreddit)}`;
+        a.textContent = `r/${subreddit}`;
+        li.appendChild(a);
+        subredditList.appendChild(li);
+      }
+    }
+
+    function renderSelectedInstance(value) {
+      if (!value) {
+        subredditSection.hidden = true;
+        return;
+      }
+
+      const instance = availableInstances.find(item => (item.url || item.onion) === value);
+      if (!instance) {
+        subredditSection.hidden = true;
+        return;
+      }
+
+      selectedInstanceTitle.textContent = `Saved subreddits on ${value}`;
+      selectedInstanceMeta.textContent = [instance.country, instance.version].filter(Boolean).join(' • ');
+      buildSubredditList(value);
+      subredditSection.hidden = false;
+      localStorage.setItem(STORAGE_KEY, value);
+    }
+
+    async function loadInstances() {
+      statusEl.textContent = 'Loading instances...';
+
+      try {
+        const response = await fetch(INSTANCES_URL, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const instances = Array.isArray(data.instances) ? data.instances : [];
+        availableInstances = instances.filter(item => item.url || item.onion);
+
+        if (availableInstances.length === 0) {
+          throw new Error('No usable instances found.');
+        }
+
+        select.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Choose an instance';
+        select.appendChild(placeholder);
+
+        for (const instance of availableInstances) {
+          const endpoint = instance.url || instance.onion;
+          const option = document.createElement('option');
+          option.value = endpoint;
+          option.textContent = formatInstanceLabel(instance);
+          select.appendChild(option);
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const matchedSaved = availableInstances.find(item => (item.url || item.onion) === saved);
+
+        if (matchedSaved) {
+          select.value = saved;
+          renderSelectedInstance(saved);
+        }
+
+        const updatedText = data.updated ? `Instance list updated: ${escapeHtml(data.updated)}` : 'Instances loaded.';
+        statusEl.textContent = updatedText;
+      } catch (error) {
+        console.error(error);
+        select.innerHTML = '<option value="">Unable to load instances</option>';
+        statusEl.textContent = 'Could not load Redlib instances. Check GitHub Pages network access or try again later.';
+      }
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const selectedValue = select.value;
+      if (!selectedValue) {
+        statusEl.textContent = 'Please choose an instance first.';
+        subredditSection.hidden = true;
+        return;
+      }
+
+      statusEl.textContent = `Selected instance: ${selectedValue}`;
+      renderSelectedInstance(selectedValue);
+    });
+
+    loadInstances();
+  </script>
+</body>
+</html>
