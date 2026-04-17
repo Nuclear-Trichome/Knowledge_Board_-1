@@ -247,7 +247,7 @@
     }
 
     function buildRestoreLink(baseUrl) {
-      const subscriptionsParam = SUBREDDITS.join('%2B');
+      const subscriptionsParam = encodeURIComponent(SUBREDDITS.join('+'));
 
       const url = `${baseUrl}/settings/restore/?theme=black&front_page=default&layout=compact&wide=off&blur_spoiler=off&show_nsfw=on&blur_nsfw=off&hide_hls_notification=on&video_quality=best&hide_sidebar_and_summary=off&use_hls=on&autoplay_videos=off&fixed_navbar=on&disable_visit_reddit_confirmation=off&comment_sort=top&post_sort=new&subscriptions=${subscriptionsParam}&filters=&hide_awards=off&hide_score=off&remove_default_feeds=off`;
 
@@ -262,13 +262,6 @@
 
       li.appendChild(a);
       subredditList.appendChild(li);
-    }/r/${encodeURIComponent(subreddit)}`;
-        a.textContent = `r/${subreddit}`;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        li.appendChild(a);
-        subredditList.appendChild(li);
-      }
     }
 
     function renderSelectedInstance(value) {
