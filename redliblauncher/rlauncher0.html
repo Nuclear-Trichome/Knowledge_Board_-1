@@ -258,6 +258,8 @@
         const a = document.createElement('a');
         a.href = `${baseUrl}/r/${encodeURIComponent(subreddit)}`;
         a.textContent = `r/${subreddit}`;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
         li.appendChild(a);
         subredditList.appendChild(li);
       }
