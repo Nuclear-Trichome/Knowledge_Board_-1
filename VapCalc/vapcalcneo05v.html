@@ -33,6 +33,7 @@
       background-color: black;
       color: limegreen;
       font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+      overflow-x: hidden;
     }
     h1, h2, h3, h4, h5, h6 {
       font-family: 'Eurostile Black', Arial, sans-serif;
@@ -334,11 +335,12 @@
       flex-wrap: nowrap;
       gap: 20px;
       padding: 0px 20px 20px;
-      width: 100vw;
+      width: 100%;
       max-width: 100%;
       height: auto;
       margin: 0;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     .column {
@@ -347,6 +349,7 @@
       flex-direction: column;
       width: 100%;
       max-width: 100%;
+      min-width: 0;
       height: auto;
       margin: 0;
       box-sizing: border-box;
@@ -1807,18 +1810,44 @@ document.addEventListener('DOMContentLoaded', () => {
   const divider = document.getElementById('divider');
   const leftCol = document.querySelector('.column.left');
   const rightCol = document.querySelector('.column.right');
-  if (!divider || !leftCol || !rightCol) return;
+  const container = divider?.parentElement;
+  if (!divider || !leftCol || !rightCol || !container) return;
 
   let isResizing = false;
-  const DEFAULT_LEFT = 33.333;
-  const SNAP_TOLERANCE = 0.75;
+  const DEFAULT_LEFT_RATIO = 1 / 3;
+  const SNAP_TOLERANCE_PX = 10;
+  const MIN_LEFT_PX = 180;
+  const MIN_RIGHT_PX = 260;
 
-  function applyWidths(leftWidth) {
-    leftWidth = Math.max(10, Math.min(90, leftWidth));
-    leftCol.style.flex = `0 0 ${leftWidth}%`;
-    rightCol.style.flex = `0 0 ${100 - leftWidth}%`;
+  function getGapPx() {
+    const styles = window.getComputedStyle(container);
+    const gap = parseFloat(styles.columnGap || styles.gap || '0');
+    return Number.isFinite(gap) ? gap : 0;
+  }
 
-    if (Math.abs(leftWidth - DEFAULT_LEFT) > SNAP_TOLERANCE) {
+  function getAvailableWidth() {
+    const rect = container.getBoundingClientRect();
+    const gapPx = getGapPx();
+    const dividerWidth = divider.getBoundingClientRect().width || divider.offsetWidth || 5;
+    return Math.max(0, rect.width - dividerWidth - (gapPx * 2));
+  }
+
+  function applyLeftPx(leftPx) {
+    const availableWidth = getAvailableWidth();
+    if (!availableWidth) return;
+
+    const maxLeft = Math.max(MIN_LEFT_PX, availableWidth - MIN_RIGHT_PX);
+    const minLeft = Math.min(MIN_LEFT_PX, maxLeft);
+    const clampedLeft = Math.max(minLeft, Math.min(maxLeft, leftPx));
+    const defaultLeftPx = availableWidth * DEFAULT_LEFT_RATIO;
+
+    leftCol.style.flex = `0 0 ${clampedLeft}px`;
+    leftCol.style.width = `${clampedLeft}px`;
+    rightCol.style.flex = '1 1 0';
+    rightCol.style.width = 'auto';
+    rightCol.style.minWidth = '0';
+
+    if (Math.abs(clampedLeft - defaultLeftPx) > SNAP_TOLERANCE_PX) {
       divider.classList.add('moved');
     } else {
       divider.classList.remove('moved');
@@ -1826,10 +1855,37 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function resize(e) {
-    const container = divider.parentElement;
     const rect = container.getBoundingClientRect();
-    const leftWidth = ((e.clientX - rect.left) / rect.width) * 100;
-    applyWidths(leftWidth);
+    const gapPx = getGapPx();
+    const dividerWidth = divider.getBoundingClientRect().width || divider.offsetWidth || 5;
+    const pointerLeftPx = e.clientX - rect.left - gapPx - (dividerWidth / 2);
+    applyLeftPx(pointerLeftPx);
+  }
+
+  function resetForSmallScreens() {
+    if (window.innerWidth <= 1024) {
+      leftCol.style.flex = '';
+      leftCol.style.width = '';
+      rightCol.style.flex = '';
+      rightCol.style.width = '';
+      divider.classList.remove('moved');
+      return true;
+    }
+    return false;
+  }
+
+  function syncLayoutToViewport() {
+    if (resetForSmallScreens()) return;
+
+    const currentLeft = leftCol.getBoundingClientRect().width;
+    const availableWidth = getAvailableWidth();
+    if (!availableWidth) return;
+
+    if (!currentLeft || Math.abs(currentLeft - availableWidth * DEFAULT_LEFT_RATIO) < 1) {
+      applyLeftPx(availableWidth * DEFAULT_LEFT_RATIO);
+    } else {
+      applyLeftPx(currentLeft);
+    }
   }
 
   function stopResize() {
@@ -1841,12 +1897,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   divider.addEventListener('mousedown', (e) => {
+    if (window.innerWidth <= 1024) return;
     e.preventDefault();
     isResizing = true;
     document.body.style.cursor = 'col-resize';
     document.addEventListener('mousemove', resize);
     document.addEventListener('mouseup', stopResize);
   });
+
+  window.addEventListener('resize', syncLayoutToViewport);
+  window.addEventListener('orientationchange', syncLayoutToViewport);
+  syncLayoutToViewport();
 })();
 
 // Sorting logic
