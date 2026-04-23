@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -20,422 +19,416 @@
       font-style: normal;
       font-display: swap;
     }
+    
+    @font-face {
+      font-family: 'Eurostile Extended Regular';
+      src: url('fonts/Eurostile Extended Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
 
-```
-@font-face {
-  font-family: 'Eurostile Extended Regular';
-  src: url('fonts/Eurostile Extended Regular.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+    /* Custom styles, keeping Eurostile font etc. */
+    body {
+      background-color: black;
+      color: limegreen;
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
 
-/* Custom styles, keeping Eurostile font etc. */
-body {
-  background-color: black;
-  color: limegreen;
-  font-family: 'Eurostile Extended Regular', Arial, sans-serif;
-}
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Eurostile Black', Arial, sans-serif;
-}
+    input, select, button {
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+      padding: 8px;
+      margin: 4px 0;
+      border-radius: 5px;
+    }
 
-input, select, button {
-  background: #000;
-  color: #00FF00;
-  border: 1px solid #005300;
-  padding: 8px;
-  margin: 4px 0;
-  border-radius: 5px;
-}
+    input[type=number] {
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 1.8em;
+      position: relative;
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+    }
 
-input[type=number] {
-  -moz-appearance: textfield;
-  -webkit-appearance: none;
-  appearance: none;
-  padding-right: 1.8em;
-  position: relative;
-  background: #000;
-  color: #00FF00;
-  border: 1px solid #005300;
-}
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
 
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+    input[type=number] {
+      -moz-appearance: textfield !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+    
+    input[type=number]::-moz-number-text {
+      opacity: 1 !important;
+    }
+    
+    input[type=number]::-moz-number-spin-box,
+    input[type=number]::-moz-number-spin-up,
+    input[type=number]::-moz-number-spin-down {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
 
-input[type=number] {
-  -moz-appearance: textfield !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
-}
+    .number-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 200px;
+    }
 
-input[type=number]::-moz-number-text {
-  opacity: 1 !important;
-}
+    .number-input-wrapper input[type=number] {
+      width: 100%;
+      box-sizing: border-box;
+    }
 
-input[type=number]::-moz-number-spin-box,
-input[type=number]::-moz-number-spin-up,
-input[type=number]::-moz-number-spin-down {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
+    input:focus, 
+    select:focus, 
+    button:focus,
+    .spinner-btn:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    input:focus:not(:focus-visible) {
+      outline: none;
+    }
+    
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible,
+    .spinner-btn:focus-visible {
+      outline: 2px solid lime !important;
+      outline-offset: 1px;
+    }
 
-.number-input-wrapper {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-  max-width: 200px;
-}
+    .spinner-btn {
+      position: absolute;
+      right: -0.2em;
+      width: 4.8em;
+      background: #000;
+      color: orangered;
+      border: 1px solid rgba(0, 255, 0, 0.604);
+      font-size: 0.8em;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+      padding: 0;
+      margin: 0;
+      height: calc(40% - 0.2em);
+      box-sizing: border-box;
+    }
 
-.number-input-wrapper input[type=number] {
-  width: 100%;
-  box-sizing: border-box;
-}
+    .spinner-up {
+      top: 0.2em;
+      border-bottom: 1px solid #005300;
+      border-radius: 0 4px 0 0;
+    }
 
-input:focus, 
-select:focus, 
-button:focus,
-.spinner-btn:focus {
-  outline: none !important;
-  box-shadow: none !important;
-}
+    .spinner-down {
+      bottom: 0.2em;
+      border-radius: 0 0 4px 0;
+    }
 
-input:focus:not(:focus-visible) {
-  outline: none;
-}
+    .number-input-wrapper:hover .spinner-btn {
+      opacity: 1;
+    }
 
-input:focus-visible,
-select:focus-visible,
-button:focus-visible,
-.spinner-btn:focus-visible {
-  outline: 2px solid lime !important;
-  outline-offset: 1px;
-}
+    .number-input-wrapper:hover .history-btn,
+    .number-input-wrapper:focus-within .history-btn {
+      opacity: 1;
+    }
 
-.spinner-btn {
-  position: absolute;
-  right: -0.2em;
-  width: 4.8em;
-  background: #000;
-  color: orangered;
-  border: 1px solid rgba(0, 255, 0, 0.604);
-  font-size: 0.8em;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-  opacity: 0;
-  transition: opacity 0.15s ease-in-out;
-  padding: 0;
-  margin: 0;
-  height: calc(40% - 0.2em);
-  box-sizing: border-box;
-}
+    .history-btn {
+      right: 4.9em;
+      width: 2.3em;
+      color: gold;
+      font-size: 0.75em;
+    }
 
-.spinner-up {
-  top: 0.2em;
-  border-bottom: 1px solid #005300;
-  border-radius: 0 4px 0 0;
-}
+    .history-up {
+      top: 0.2em;
+      border-radius: 4px 0 0 0;
+    }
 
-.spinner-down {
-  bottom: 0.2em;
-  border-radius: 0 0 4px 0;
-}
+    .history-down {
+      bottom: 0.2em;
+      border-radius: 0 0 0 4px;
+    }
 
-.number-input-wrapper:hover .spinner-btn {
-  opacity: 1;
-}
+    .spinner-btn:focus {
+      outline: none;
+    }
 
-.number-input-wrapper:hover .history-btn,
-.number-input-wrapper:focus-within .history-btn {
-  opacity: 1;
-}
+    #temperature,
+    #heatSoak {
+      min-width: 80px;
+    }
 
-.history-btn {
-  right: 4.9em;
-  width: 2.3em;
-  color: gold;
-  font-size: 0.75em;
-}
+    button:hover { opacity: 0.8; }
 
-.history-up {
-  top: 0.2em;
-  border-radius: 4px 0 0 0;
-}
+    table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+      background: #111;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #005300;
+      text-align: center;
+    }
+    th {
+      background: #000;
+    }
+    tr:hover {
+      background: #222;
+    }
 
-.history-down {
-  bottom: 0.2em;
-  border-radius: 0 0 0 4px;
-}
+    .section-card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
 
-.spinner-btn:focus {
-  outline: none;
-}
+    .result-display {
+      margin-top: 10px;
+      padding: 15px;
+      border: 2px solid limegreen;
+      border-radius: 8px;
+    }
 
-#temperature,
-#heatSoak {
-  min-width: 80px;
-}
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      flex: 1 1 200px;
+      text-align: center;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #005300;
+    }
+    .stat-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: limegreen;
+    }
 
-button:hover { opacity: 0.8; }
+    .chart-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: black;
+      border-radius: 8px;
+      border: 1px solid limegreen;
+      box-sizing: border-box;
+      width: 100%;
+      height: 400px;
+    }
 
-table {
-  width: 100%;
-  margin-top: 1rem;
-  border-collapse: collapse;
-  background: #111;
-}
-th, td {
-  padding: 8px;
-  border: 1px solid #005300;
-  text-align: center;
-}
-th {
-  background: #000;
-}
-tr:hover {
-  background: #222;
-}
+    .action-btn {
+      background: none;
+      border: none;
+      color: limegreen;
+      cursor: pointer;
+      padding: 5px;
+      transition: opacity 0.2s;
+    }
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+    .remove-btn {
+      color: orangered;
+    }
+    .remove-btn:hover {
+      color: #ff4444;
+    }
 
-.section-card {
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 12px;
-  margin: 20px 0;
-}
+    .removed-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #005300;
+    }
+    .section-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px 0;
+      border-bottom: 1px solid #005300;
+    }
+    .toggle-icon {
+      font-size: 1.5em;
+      transition: transform 0.2s;
+    }
+    .removed-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .removed-container.open {
+      max-height: 1000px;
+    }
 
-.result-display {
-  margin-top: 10px;
-  padding: 15px;
-  border: 2px solid limegreen;
-  border-radius: 8px;
-}
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+    .modal-content {
+      background-color: #222;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #005300;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    .close-modal {
+      color: limegreen;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-modal:hover {
+      color: #00FF00;
+    }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  gap: 15px;
-  margin: 20px 0;
-}
-.stat-card {
-  flex: 1 1 200px;
-  text-align: center;
-  background: #222;
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #005300;
-}
-.stat-title {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.stat-value {
-  font-size: 1.5em;
-  font-weight: bold;
-  color: limegreen;
-}
+    .container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 20px;
+      padding: 0px 20px 20px;
+      width: 100vw;
+      max-width: 100%;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+    }
 
-.chart-container {
-  margin: 20px 0;
-  padding: 20px;
-  background: black;
-  border-radius: 8px;
-  border: 1px solid limegreen;
-  box-sizing: border-box;
-  width: 100%;
-  height: 400px;
-}
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: auto;
+    }
 
-.action-btn {
-  background: none;
-  border: none;
-  color: limegreen;
-  cursor: pointer;
-  padding: 5px;
-  transition: opacity 0.2s;
-}
-.action-btn:hover {
-  opacity: 0.8;
-}
-.remove-btn {
-  color: orangered;
-}
-.remove-btn:hover {
-  color: #ff4444;
-}
+    #divider {
+      width: 5px;
+      position: relative;
+      cursor: col-resize;
+      background: transparent;
+      flex: 0 0 5px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
 
-.removed-section {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px solid #005300;
-}
-.section-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  padding: 10px 0;
-  border-bottom: 1px solid #005300;
-}
-.toggle-icon {
-  font-size: 1.5em;
-  transition: transform 0.2s;
-}
-.removed-container {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-.removed-container.open {
-  max-height: 1000px;
-}
+    #divider::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: #333;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
 
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.7);
-}
-.modal-content {
-  background-color: #222;
-  margin: 10% auto;
-  padding: 20px;
-  border: 1px solid #005300;
-  width: 80%;
-  max-width: 500px;
-  border-radius: 8px;
-}
-.close-modal {
-  color: limegreen;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
-}
-.close-modal:hover {
-  color: #00FF00;
-}
+    #divider::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      background: transparent;
+    }
 
-.container {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  padding: 0px 20px 20px;
-  width: 100vw;
-  max-width: 100%;
-  height: auto;
-  margin: 0;
-  box-sizing: border-box;
-}
+    #divider.moved::before {
+      opacity: 0;
+    }
 
-.column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  margin: 0;
-  box-sizing: border-box;
-  overflow: auto;
-}
+    #efficiencyChart {
+      border-color: limegreen;
+    }
 
-#divider {
-  width: 5px;
-  position: relative;
-  cursor: col-resize;
-  background: transparent;
-  flex: 0 0 5px;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: none;
-}
+    .column:nth-child(2) {
+      flex: 2;
+      padding-right: 20px;
+    }
 
-/* visible bar */
-#divider::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: #333;
-  transition: opacity 0.15s ease;
-  pointer-events: none;
-}
+    @media (max-width: 1024px) {
+      .container {
+        flex-direction: column;
+        padding: 20px 10px;
+      }
 
-/* always-available invisible grab area */
-#divider::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  background: transparent;
-}
+      .column {
+        flex: 1;
+      }
 
-/* hide only the bar after user moves it from default */
-#divider.moved::before {
-  opacity: 0;
-}
+      .column:nth-child(2) {
+        padding-right: 10px;
+      }
 
-#efficiencyChart {
-  border-color: limegreen;
-}
+      #divider {
+        display: none;
+      }
+    }
 
-.column:nth-child(2) {
-  flex: 2;
-  padding-right: 20px;
-}
+    @media (max-width: 640px) {
+      .stat-card {
+        flex: 1 1 100%;
+      }
+    }
 
-@media (max-width: 1024px) {
-  .container {
-    flex-direction: column;
-    padding: 20px 10px;
-  }
+    .font-euro-bold {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
 
-  .column {
-    flex: 1;
-  }
-
-  .column:nth-child(2) {
-    padding-right: 10px;
-  }
-
-  #divider {
-    display: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .stat-card {
-    flex: 1 1 100%;
-  }
-}
-
-.font-euro-bold {
-  font-family: 'Eurostile Black', Arial, sans-serif;
-}
-
-.font-euro-regular {
-  font-family: 'Eurostile Extended Regular', Arial, sans-serif;
-}
-```
-
+    .font-euro-regular {
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -443,22 +436,20 @@ tr:hover {
 <header class="text-center p-6" style="padding-top: 20px; padding-bottom:0px;">
   <div class="inline relative group">
     <span id="vaporizerName" class="text-4xl text-gray-300 cursor-pointer font-euro-regular transition-all">QR Baller</span>
-
-```
-<button 
-  class="absolute top-0 left-0 text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity"
-  onclick="editVapeName()"
-  style="transform: translateY(-100%); left: 1rem;"
-  title="Edit Name"
->✎</button>
-
-<button 
-  class="absolute text-xs text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity"
-  onclick="toggleVapeBold()"
-  style="top: 1.2rem; left: 1rem;"
-  title="Toggle Bold Style"
->🅑</button>
-```
+    
+    <button 
+      class="absolute top-0 left-0 text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="editVapeName()"
+      style="transform: translateY(-100%); left: 1rem;"
+      title="Edit Name"
+    >✎</button>
+  
+    <button 
+      class="absolute text-xs text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="toggleVapeBold()"
+      style="top: 1.2rem; left: 1rem;"
+      title="Toggle Bold Style"
+    >🅑</button>
 
   </div>  
   <h1 class="text-4xl text-green-500 inline"> | </h1>
@@ -471,80 +462,77 @@ tr:hover {
     <div class="section-card">
       <h2 class="text-2xl mb-4">Session Calculator</h2>
 
-```
-  <label>Temperature (°F)</label>
-  <div class="number-input-wrapper">
-    <input type="number" id="temperature" min="300" max="500" value="430" data-history-key="temperature">
-  </div>
+      <label>Temperature (°F)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="temperature" min="300" max="500" value="430" data-history-key="temperature">
+      </div>
 
-  <br><br>
+      <br><br>
 
-  <label>Heat Soak (seconds)</label>
-  <div class="number-input-wrapper">
-    <input type="number" id="heatSoak" min="0" max="120" value="40" data-history-key="heatSoak">
-  </div>
+      <label>Heat Soak (seconds)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="heatSoak" min="0" max="120" value="40" data-history-key="heatSoak">
+      </div>
 
-  <br><br>
+      <br><br>
 
-  <label>Starting Mass (g)</label>
-  <div class="number-input-wrapper">
-    <input type="number" id="startingMass" step="0.001" min="0" value="0.200">
-  </div>
+      <label>Starting Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="startingMass" step="0.001" min="0" value="0.200">
+      </div>
 
-  <br><br>
+      <br><br>
 
-  <label>Ending Mass (g)</label>
-  <div class="number-input-wrapper">
-    <input type="number" id="endingMass" step="0.001" min="0" value="0.115">
-  </div>
+      <label>Ending Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="endingMass" step="0.001" min="0" value="0.115">
+      </div>
 
-  <br><br>
+      <br><br>
 
-  <label>Mass with Concentrate (g)</label>
-  <div class="number-input-wrapper">
-    <input type="number" id="massWithConcentrate" step="0.001" min="0" placeholder="0.000">
-  </div>
+      <label>Mass with Concentrate (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="massWithConcentrate" step="0.001" min="0" placeholder="0.000">
+      </div>
 
-  <br><br>
+      <br><br>
 
-  <button id="calculateBtn">Calculate Efficiency</button>
-  <button id="addLogBtn">Add to Log</button>
+      <button id="calculateBtn">Calculate Efficiency</button>
+      <button id="addLogBtn">Add to Log</button>
 
-  <br><br>
-  <button onclick="resetCachedForm()">Reset Form</button>
-  <br><br>
+      <br><br>
+      <button onclick="resetCachedForm()">Reset Form</button>
+      <br><br>
 
-  <div class="result-display" id="resultDisplay">
-    <h3 class="text-xl mb-2">Extraction Results</h3>
-    <p>Mass Lost: <span id="massLost">0.000</span> g</p>
-    <p>Wax Mass: <span id="waxMass">0.0</span> mg</p>
-    <p>Efficiency: <span id="efficiency">0.0</span>%</p>
-  </div>
-</div>
-
-<div class="section-card">
-  <h2 class="text-2xl mb-4">Statistics</h2>
-  <div class="stats">
-    <div class="stat-card">
-      <div class="stat-title">Avg. Efficiency</div>
-      <div class="stat-value" id="avgEfficiency">0.0%</div>
+      <div class="result-display" id="resultDisplay">
+        <h3 class="text-xl mb-2">Extraction Results</h3>
+        <p>Mass Lost: <span id="massLost">0.000</span> g</p>
+        <p>Wax Mass: <span id="waxMass">0.0</span> mg</p>
+        <p>Efficiency: <span id="efficiency">0.0</span>%</p>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-title">Max Efficiency</div>
-      <div class="stat-value" id="maxEfficiency">0.0%</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-title">Avg. Temperature</div>
-      <div class="stat-value" id="avgTemperature">0°F</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-title">Avg. Heat Soak</div>
-      <div class="stat-value" id="avgHeatSoak">0s</div>
-    </div>
-  </div>
-</div>
-```
 
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Statistics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-title">Avg. Efficiency</div>
+          <div class="stat-value" id="avgEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Max Efficiency</div>
+          <div class="stat-value" id="maxEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Temperature</div>
+          <div class="stat-value" id="avgTemperature">0°F</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Heat Soak</div>
+          <div class="stat-value" id="avgHeatSoak">0s</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="divider"></div>
@@ -560,61 +548,58 @@ tr:hover {
       </div>
     </div>
 
-```
-<div class="section-card">
-  <h2 class="text-2xl mb-4">Session Log</h2>
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Session Log</h2>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Trial #</th>
-        <th>Temp (°F)</th>
-        <th>Heat Soak (s)</th>
-        <th>Start Mass (g)</th>
-        <th>Wax Mass (mg)</th>
-        <th>End Mass (g)</th>
-        <th>Mass Lost (g)</th>
-        <th>Efficiency (%)</th>
-        <th>🕒</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="logBody"></tbody>
-  </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Trial #</th>
+            <th>Temp (°F)</th>
+            <th>Heat Soak (s)</th>
+            <th>Start Mass (g)</th>
+            <th>Wax Mass (mg)</th>
+            <th>End Mass (g)</th>
+            <th>Mass Lost (g)</th>
+            <th>Efficiency (%)</th>
+            <th>🕒</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
 
-  <div class="action-buttons">
-    <button id="downloadCSVBtn">Download CSV</button>
-    <input type="file" id="csvUpload" accept=".csv" style="display: none;"/>
-    <button id="uploadCSVBtn">Upload CSV</button>
-  </div>
-</div>
+      <div class="action-buttons">
+        <button id="downloadCSVBtn">Download CSV</button>
+        <input type="file" id="csvUpload" accept=".csv" style="display: none;"/>
+        <button id="uploadCSVBtn">Upload CSV</button>
+      </div>
+    </div>
 
-<div class="removed-section">
-  <div class="section-toggle" id="removedToggle">
-    <h3>Removed Trials</h3>
-    <span class="toggle-icon">▼</span>
-  </div>
-  <div class="removed-container" id="removedContainer">
-    <table id="removedTable">
-      <thead>
-        <tr>
-          <th>Trial #</th>
-          <th>Temp (°F)</th>
-          <th>Heat Soak (s)</th>
-          <th>Start Mass (g)</th>
-          <th>Wax Mass (mg)</th>
-          <th>End Mass (g)</th>
-          <th>Mass Lost (g)</th>
-          <th>Efficiency (%)</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="removedBody"></tbody>
-    </table>
-  </div>
-</div>
-```
-
+    <div class="removed-section">
+      <div class="section-toggle" id="removedToggle">
+        <h3>Removed Trials</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="removed-container" id="removedContainer">
+        <table id="removedTable">
+          <thead>
+            <tr>
+              <th>Trial #</th>
+              <th>Temp (°F)</th>
+              <th>Heat Soak (s)</th>
+              <th>Start Mass (g)</th>
+              <th>Wax Mass (mg)</th>
+              <th>End Mass (g)</th>
+              <th>Mass Lost (g)</th>
+              <th>Efficiency (%)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="removedBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -623,67 +608,64 @@ tr:hover {
     <span class="close-modal" id="closeModal">×</span>
     <h2 class="modal-title">Edit Trial</h2>
 
-```
-<form id="editForm" class="modal-form">
-  <div class="form-group">
-    <label for="editTemperature">Temperature (°F)</label>
-    <div class="number-input-wrapper">
-      <input type="number" id="editTemperature" min="300" max="500">
-      <button type="button" class="spinner-btn spinner-up" aria-label="Increase temperature">▲</button>
-      <button type="button" class="spinner-btn spinner-down" aria-label="Decrease temperature">▼</button>
+    <form id="editForm" class="modal-form">
+      <div class="form-group">
+        <label for="editTemperature">Temperature (°F)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editTemperature" min="300" max="500">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase temperature">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease temperature">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editHeatSoak">Heat Soak (seconds)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editHeatSoak" min="0" max="120">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase heat soak">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease heat soak">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editStartingMass">Starting Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editStartingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase starting mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease starting mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editEndingMass">Ending Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editEndingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase ending mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease ending mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editConcentrateMass">Mass with Concentrate (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editConcentrateMass" step="0.001" min="0" placeholder="0.000">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase mass with concentrate">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease mass with concentrate">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="grid-column: span 2">
+        <div class="result">
+          <p>Mass Lost: <span id="editMassLost">0.000</span> g</p>
+          <p>Efficiency: <span id="editEfficiency">0.0</span>%</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-buttons">
+      <button id="cancelEdit" class="remove-btn">Cancel</button>
+      <button id="saveEdit" class="edit-btn">Save Changes</button>
     </div>
-  </div>
-
-  <div class="form-group">
-    <label for="editHeatSoak">Heat Soak (seconds)</label>
-    <div class="number-input-wrapper">
-      <input type="number" id="editHeatSoak" min="0" max="120">
-      <button type="button" class="spinner-btn spinner-up" aria-label="Increase heat soak">▲</button>
-      <button type="button" class="spinner-btn spinner-down" aria-label="Decrease heat soak">▼</button>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label for="editStartingMass">Starting Mass (g)</label>
-    <div class="number-input-wrapper">
-      <input type="number" id="editStartingMass" step="0.001" min="0">
-      <button type="button" class="spinner-btn spinner-up" aria-label="Increase starting mass">▲</button>
-      <button type="button" class="spinner-btn spinner-down" aria-label="Decrease starting mass">▼</button>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label for="editEndingMass">Ending Mass (g)</label>
-    <div class="number-input-wrapper">
-      <input type="number" id="editEndingMass" step="0.001" min="0">
-      <button type="button" class="spinner-btn spinner-up" aria-label="Increase ending mass">▲</button>
-      <button type="button" class="spinner-btn spinner-down" aria-label="Decrease ending mass">▼</button>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label for="editConcentrateMass">Mass with Concentrate (g)</label>
-    <div class="number-input-wrapper">
-      <input type="number" id="editConcentrateMass" step="0.001" min="0" placeholder="0.000">
-      <button type="button" class="spinner-btn spinner-up" aria-label="Increase mass with concentrate">▲</button>
-      <button type="button" class="spinner-btn spinner-down" aria-label="Decrease mass with concentrate">▼</button>
-    </div>
-  </div>
-
-  <div class="form-group" style="grid-column: span 2">
-    <div class="result">
-      <p>Mass Lost: <span id="editMassLost">0.000</span> g</p>
-      <p>Efficiency: <span id="editEfficiency">0.0</span>%</p>
-    </div>
-  </div>
-</form>
-
-<div class="modal-buttons">
-  <button id="cancelEdit" class="remove-btn">Cancel</button>
-  <button id="saveEdit" class="edit-btn">Save Changes</button>
-</div>
-```
-
   </div>
 </div>
 
@@ -1828,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!divider || !leftCol || !rightCol) return;
 
   let isResizing = false;
-  const DEFAULT_LEFT = 33.333; // matches initial 1:2 flex layout
+  const DEFAULT_LEFT = 33.333;
   const SNAP_TOLERANCE = 0.75;
 
   function applyWidths(leftWidth) {
