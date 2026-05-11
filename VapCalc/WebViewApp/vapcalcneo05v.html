@@ -1,0 +1,2522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VapCalcNeo | Vaporizer Efficiency Calculator</title>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon">
+  <!-- Styles and Fonts (TailwindCSS, etc.) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="preload" href="./fonts/eurostile_extended_black.ttf" as="font" type="font/ttf">
+  <link rel="preload" href="./fonts/Eurostile Extended Regular.ttf" as="font" type="font/ttf">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Font loading for Eurostile */
+    @font-face {
+      font-family: 'Eurostile Black';
+      src: url('./fonts/eurostile_extended_black.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    
+    @font-face {
+      font-family: 'Eurostile Extended Regular';
+      src: url('./fonts/Eurostile Extended Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* Custom styles, keeping Eurostile font etc. */
+    body {
+      background-color: black;
+      color: limegreen;
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
+
+    input, select, button {
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+      padding: 8px;
+      margin: 4px 0;
+      border-radius: 5px;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 1.8em;
+      position: relative;
+      background: #000;
+      color: #00FF00;
+      border: 1px solid #005300;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type=number] {
+      -moz-appearance: textfield !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+    }
+    
+    input[type=number]::-moz-number-text {
+      opacity: 1 !important;
+    }
+    
+    input[type=number]::-moz-number-spin-box,
+    input[type=number]::-moz-number-spin-up,
+    input[type=number]::-moz-number-spin-down {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .number-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 200px;
+    }
+
+    .number-input-wrapper input[type=number] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    input:focus, 
+    select:focus, 
+    button:focus,
+    .spinner-btn:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    
+    input:focus:not(:focus-visible) {
+      outline: none;
+    }
+    
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible,
+    .spinner-btn:focus-visible {
+      outline: 2px solid lime !important;
+      outline-offset: 1px;
+    }
+
+    .spinner-btn {
+      position: absolute;
+      right: -0.2em;
+      width: 4.8em;
+      background: #000;
+      color: orangered;
+      border: 1px solid rgba(0, 255, 0, 0.604);
+      font-size: 0.8em;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-in-out;
+      padding: 0;
+      margin: 0;
+      height: calc(40% - 0.2em);
+      box-sizing: border-box;
+    }
+
+    .spinner-up {
+      top: 0.2em;
+      border-bottom: 1px solid #005300;
+      border-radius: 0 4px 0 0;
+    }
+
+    .spinner-down {
+      bottom: 0.2em;
+      border-radius: 0 0 4px 0;
+    }
+
+    .number-input-wrapper:hover .spinner-btn {
+      opacity: 1;
+    }
+
+    .number-input-wrapper:hover .history-btn,
+    .number-input-wrapper:focus-within .history-btn {
+      opacity: 1;
+    }
+
+    .history-btn {
+      right: 4.9em;
+      width: 2.3em;
+      color: gold;
+      font-size: 0.75em;
+    }
+
+    .history-up {
+      top: 0.2em;
+      border-radius: 4px 0 0 0;
+    }
+
+    .history-down {
+      bottom: 0.2em;
+      border-radius: 0 0 0 4px;
+    }
+
+    .spinner-btn:focus {
+      outline: none;
+    }
+
+    #temperature,
+    #heatSoak {
+      min-width: 80px;
+    }
+
+    button:hover { opacity: 0.8; }
+
+    table {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: collapse;
+      background: #111;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #005300;
+      text-align: center;
+    }
+    th {
+      background: #000;
+    }
+    tr:hover {
+      background: #222;
+    }
+
+    .section-card {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+
+    .result-display {
+      margin-top: 10px;
+      padding: 15px;
+      border: 2px solid limegreen;
+      border-radius: 8px;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      flex: 1 1 200px;
+      text-align: center;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #005300;
+    }
+    .stat-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: limegreen;
+    }
+
+    .chart-container {
+      margin: 20px 0;
+      padding: 20px;
+      background: black;
+      border-radius: 8px;
+      border: 1px solid limegreen;
+      box-sizing: border-box;
+      width: 100%;
+      height: 400px;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      color: limegreen;
+      cursor: pointer;
+      padding: 5px;
+      transition: opacity 0.2s;
+    }
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+    .remove-btn {
+      color: orangered;
+    }
+    .remove-btn:hover {
+      color: #ff4444;
+    }
+
+    .removed-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #005300;
+    }
+    .section-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px 0;
+      border-bottom: 1px solid #005300;
+    }
+    .toggle-icon {
+      font-size: 1.5em;
+      transition: transform 0.2s;
+    }
+    .removed-container {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .removed-container.open {
+      max-height: 1000px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+    .modal-content {
+      background-color: #222;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #005300;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 8px;
+    }
+    .close-modal {
+      color: limegreen;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-modal:hover {
+      color: #00FF00;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 20px;
+      padding: 0px 20px 20px;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      height: auto;
+      margin: 0;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    #divider {
+      width: 5px;
+      position: relative;
+      cursor: col-resize;
+      background: transparent;
+      flex: 0 0 5px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    #divider::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: #333;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+
+    #divider::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      background: transparent;
+    }
+
+    #divider.moved::before {
+      opacity: 0;
+    }
+
+    #efficiencyChart {
+      border-color: limegreen;
+    }
+
+    .column:nth-child(2) {
+      flex: 2;
+      padding-right: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        flex-direction: column;
+        padding: 20px 10px;
+      }
+
+      .column {
+        flex: 1;
+      }
+
+      .column:nth-child(2) {
+        padding-right: 10px;
+      }
+
+      #divider {
+        display: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stat-card {
+        flex: 1 1 100%;
+      }
+    }
+
+    .font-euro-bold {
+      font-family: 'Eurostile Black', Arial, sans-serif;
+    }
+
+    .font-euro-regular {
+      font-family: 'Eurostile Extended Regular', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<header class="text-center p-6" style="padding-top: 20px; padding-bottom:0px;">
+  <div class="inline relative group">
+    <span id="vaporizerName" class="text-4xl text-gray-300 cursor-pointer font-euro-regular transition-all">QR Baller</span>
+    
+    <button 
+      class="absolute top-0 left-0 text-xs text-green-400 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="editVapeName()"
+      style="transform: translateY(-100%); left: 1rem;"
+      title="Edit Name"
+    >✎</button>
+  
+    <button 
+      class="absolute text-xs text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity"
+      onclick="toggleVapeBold()"
+      style="top: 1.2rem; left: 1rem;"
+      title="Toggle Bold Style"
+    >🅑</button>
+
+  </div>  
+  <h1 class="text-4xl text-green-500 inline"> | </h1>
+  <h1 class="text-4xl text-red-500 inline">Vaporizer Efficiency Calculator</h1>
+  <p class="mt-2">Track, analyze, and optimize your vaporizer sessions</p>
+</header>
+
+<div class="container" style="flex: 1;">
+  <div class="column left">
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Session Calculator</h2>
+
+      <label>Temperature (°F)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="temperature" min="300" max="500" value="430" data-history-key="temperature">
+      </div>
+
+      <br><br>
+
+      <label>Heat Soak (seconds)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="heatSoak" min="0" max="120" value="40" data-history-key="heatSoak">
+      </div>
+
+      <br><br>
+
+      <label>Starting Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="startingMass" step="0.001" min="0" value="0.200">
+      </div>
+
+      <br><br>
+
+      <label>Ending Mass (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="endingMass" step="0.001" min="0" value="0.115">
+      </div>
+
+      <br><br>
+
+      <label>Mass with Concentrate (g)</label>
+      <div class="number-input-wrapper">
+        <input type="number" id="massWithConcentrate" step="0.001" min="0" placeholder="0.000">
+      </div>
+
+      <br><br>
+
+      <button id="calculateBtn" type="button" onclick="calculateEfficiency()">Calculate Efficiency</button>
+      <button id="addLogBtn" type="button" onclick="addToLog()">Add to Log</button>
+
+      <br><br>
+      <button onclick="resetCachedForm()">Reset Form</button>
+      <br><br>
+
+      <div class="result-display" id="resultDisplay">
+        <h3 class="text-xl mb-2">Extraction Results</h3>
+        <p>Mass Lost: <span id="massLost">0.000</span> g</p>
+        <p>Wax Mass: <span id="waxMass">0.0</span> mg</p>
+        <p>Efficiency: <span id="efficiency">0.0</span>%</p>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Statistics</h2>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-title">Avg. Efficiency</div>
+          <div class="stat-value" id="avgEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Max Efficiency</div>
+          <div class="stat-value" id="maxEfficiency">0.0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Temperature</div>
+          <div class="stat-value" id="avgTemperature">0°F</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Avg. Heat Soak</div>
+          <div class="stat-value" id="avgHeatSoak">0s</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="divider"></div>
+
+  <div class="column right">
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Visual Analysis</h2>
+      <div class="chart-container">
+        <canvas id="efficiencyChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="tempVsEfficiencyChart"></canvas>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h2 class="text-2xl mb-4">Session Log</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Trial #</th>
+            <th>Temp (°F)</th>
+            <th>Heat Soak (s)</th>
+            <th>Start Mass (g)</th>
+            <th>Wax Mass (mg)</th>
+            <th>End Mass (g)</th>
+            <th>Mass Lost (g)</th>
+            <th>Efficiency (%)</th>
+            <th>🕒</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+
+      <div class="action-buttons" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button id="downloadCSVBtn">Download CSV</button>
+        <input type="file" id="csvUpload" accept=".csv" style="display: none;"/>
+        <button id="uploadCSVBtn">Upload CSV</button>
+        <button id="sessionLogLoadMoreBtn" type="button">Load More</button>
+        <button id="sessionLogResetBtn" type="button">Reset</button>
+        <span id="sessionLogStatus" style="opacity:0.8; font-size:0.9rem;"></span>
+      </div>
+    </div>
+
+    <div class="removed-section">
+      <div class="section-toggle" id="removedToggle">
+        <h3>Removed Trials</h3>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="removed-container" id="removedContainer">
+        <table id="removedTable">
+          <thead>
+            <tr>
+              <th>Trial #</th>
+              <th>Temp (°F)</th>
+              <th>Heat Soak (s)</th>
+              <th>Start Mass (g)</th>
+              <th>Wax Mass (mg)</th>
+              <th>End Mass (g)</th>
+              <th>Mass Lost (g)</th>
+              <th>Efficiency (%)</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="removedBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeModal">×</span>
+    <h2 class="modal-title">Edit Trial</h2>
+
+    <form id="editForm" class="modal-form">
+      <div class="form-group">
+        <label for="editTemperature">Temperature (°F)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editTemperature" min="300" max="500">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase temperature">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease temperature">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editHeatSoak">Heat Soak (seconds)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editHeatSoak" min="0" max="120">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase heat soak">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease heat soak">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editStartingMass">Starting Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editStartingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase starting mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease starting mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editEndingMass">Ending Mass (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editEndingMass" step="0.001" min="0">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase ending mass">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease ending mass">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editConcentrateMass">Mass with Concentrate (g)</label>
+        <div class="number-input-wrapper">
+          <input type="number" id="editConcentrateMass" step="0.001" min="0" placeholder="0.000">
+          <button type="button" class="spinner-btn spinner-up" aria-label="Increase mass with concentrate">▲</button>
+          <button type="button" class="spinner-btn spinner-down" aria-label="Decrease mass with concentrate">▼</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="grid-column: span 2">
+        <div class="result">
+          <p>Mass Lost: <span id="editMassLost">0.000</span> g</p>
+          <p>Efficiency: <span id="editEfficiency">0.0</span>%</p>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-buttons">
+      <button id="cancelEdit" class="remove-btn">Cancel</button>
+      <button id="saveEdit" class="edit-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let sessionLog = [];
+let removedLog = [];
+let currentEditIndex = null;
+
+const SESSION_PAGE_SIZE = 100;
+const SESSION_PAGE_STEP = 100;
+const CHART_HISTORY_LIMIT = 420;
+let sessionPageOffset = 0;
+let sessionTotalCount = 0;
+let sessionBasePage = [];
+let sessionLoadMorePage = [];
+let nativeSessionStore = false;
+let nativeBoxSummary = null;
+let nativeStatsSummary = null;
+let nativeFieldHistory = { temperature: [], heatSoak: [] };
+let nativeChartLog = [];
+let pendingNativeRefresh = false;
+let currentSortColumn = 'timestamp';
+let currentSortDirection = 'desc';
+let nativeStateLoaded = false;
+
+
+let efficiencyChart;
+let tempVsEfficiencyChart;
+
+const cachedFields = [
+  'temperature',
+  'heatSoak',
+  'startingMass',
+  'endingMass',
+  'massWithConcentrate'
+];
+
+const historyState = {
+  temperature: { index: -1 },
+  heatSoak: { index: -1 }
+};
+
+function normalizeHistoryValue(key, value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return key === 'temperature' ? String(Math.round(numeric)) : String(numeric);
+}
+
+function getHistoryValueKey(key) {
+  return key === 'temperature' ? 'temp' : 'heatSoak';
+}
+
+function getHistoryEntriesSorted(key) {
+  if (nativeSessionStore && nativeFieldHistory && Array.isArray(nativeFieldHistory[key])) {
+    return nativeFieldHistory[key].map(value => ({ [getHistoryValueKey(key)]: value }));
+  }
+
+  const valueKey = getHistoryValueKey(key);
+  const entries = [];
+
+  (sessionLog || []).forEach((entry, index) => {
+    if (entry && entry[valueKey] !== undefined && entry[valueKey] !== null) {
+      entries.push({ entry, sourceRank: 1, orderRank: index });
+    }
+  });
+
+  (removedLog || []).forEach((entry, index) => {
+    if (entry && entry[valueKey] !== undefined && entry[valueKey] !== null) {
+      entries.push({ entry, sourceRank: 0, orderRank: index });
+    }
+  });
+
+  entries.sort((a, b) => {
+    const timeA = Date.parse(a.entry?.timestamp || '');
+    const timeB = Date.parse(b.entry?.timestamp || '');
+    const hasTimeA = Number.isFinite(timeA);
+    const hasTimeB = Number.isFinite(timeB);
+    if (hasTimeA && hasTimeB && timeA !== timeB) return timeB - timeA;
+    if (hasTimeA !== hasTimeB) return hasTimeB - hasTimeA;
+    if (a.sourceRank !== b.sourceRank) return b.sourceRank - a.sourceRank;
+    return b.orderRank - a.orderRank;
+  });
+
+  return entries.map(item => item.entry);
+}
+
+function payloadByteSize(value) {
+  try {
+    return new TextEncoder().encode(JSON.stringify(value ?? {})).length;
+  } catch (error) {
+    console.warn('[VapCalcJS] Failed to size payload', error);
+    return 0;
+  }
+}
+
+function getDerivedHistoryValues(key) {
+  const valueKey = getHistoryValueKey(key);
+  const seen = new Set();
+  const values = [];
+
+  getHistoryEntriesSorted(key).forEach(entry => {
+    const normalized = normalizeHistoryValue(key, entry[valueKey]);
+    if (normalized === null || seen.has(normalized)) return;
+    seen.add(normalized);
+    values.push(normalized);
+  });
+
+  return values;
+}
+
+function cycleHistoryValue(input, direction) {
+  if (!input) return;
+
+  const key = input.dataset.historyKey;
+  if (!key || !historyState[key]) return;
+
+  const history = getDerivedHistoryValues(key);
+  if (!history.length) return;
+
+  const state = historyState[key];
+
+  if (state.index === -1) {
+    state.index = direction > 0 ? 0 : history.length - 1;
+  } else {
+    state.index = Math.max(0, Math.min(history.length - 1, state.index + direction));
+  }
+
+  input.value = history[state.index];
+  scheduleNativeSave();
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function resetHistoryCursor(key) {
+  if (historyState[key]) {
+    historyState[key].index = -1;
+  }
+}
+
+// -----------------------------------------------------------
+// SAFE GRADIENT HELPERS (no memory leak, cached per chart)
+// -----------------------------------------------------------
+
+function makeVerticalGradient(chart, top, mid, bottom) {
+  const area = chart.chartArea;
+  if (!area) return bottom; // Fallback before layout
+
+  const ctx = chart.ctx;
+
+  // Cache per-chart so we don't remake gradients on each update
+  if (!chart._cachedGradient) {
+    const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
+    g.addColorStop(0, top);
+    g.addColorStop(0.5, mid);
+    g.addColorStop(1, bottom);
+    chart._cachedGradient = g;
+  }
+
+  return chart._cachedGradient;
+}
+
+function getMaskedPointColor(chart, value) {
+  const area = chart.chartArea;
+  const y = chart.scales.y;
+  if (!area || !y) return "lime";
+
+  const px = y.getPixelForValue(value);
+  const ratio = (px - area.top) / (area.bottom - area.top);
+
+  const clamp = v => Math.min(1, Math.max(0, v));
+  const t = clamp(ratio);
+
+  // Gradient stops
+  const top =  [255,  69, 0];
+  const mid =  [255, 215, 0];
+  const bot =  [0, 255, 0];
+
+  function lerp(a,b,t) { return a + (b - a) * t; }
+
+  let r,g,b;
+  if (t <= 0.5) {
+    const k = t * 2;
+    r = lerp(top[0], mid[0], k);
+    g = lerp(top[1], mid[1], k);
+    b = lerp(top[2], mid[2], k);
+  } else {
+    const k = (t - 0.5) * 2;
+    r = lerp(mid[0], bot[0], k);
+    g = lerp(mid[1], bot[1], k);
+    b = lerp(mid[2], bot[2], k);
+  }
+
+  return `rgb(${r},${g},${b})`;
+}
+
+// -----------------------------------------------------------
+// FOCUSED GRADIENT: bounded only to actual plotted data range
+// -----------------------------------------------------------
+// "Zoomed" vertical gradient that is stable & cached.
+// It uses the full Y-axis like vapcalcneo03, but lets you shrink
+// the active gradient band so the gold stripe is narrower.
+function makeVerticalGradientFocused(chart, datasetIndex, topColor, midColor, bottomColor) {
+  const { ctx, chartArea, scales } = chart;
+  if (!chartArea || !scales?.y) return bottomColor;
+
+  const yScale = scales.y;
+  const axisMin = yScale.min;
+  const axisMax = yScale.max;
+
+  if (!Number.isFinite(axisMin) || !Number.isFinite(axisMax)) {
+    return bottomColor;
+  }
+
+  const span = axisMax - axisMin || 1;
+  const midVal = (axisMax + axisMin) / 2;
+
+  // 0 < ZOOM_FACTOR <= 1
+  // Smaller = tighter vertical band (= *narrower* gold stripe)
+  const ZOOM_FACTOR = 1;  // try 0.4, 0.3, etc. to shrink further
+
+  const halfSpan = (span * ZOOM_FACTOR) / 2;
+  const gradMax = midVal + halfSpan;
+  const gradMin = midVal - halfSpan;
+
+  const topPx = yScale.getPixelForValue(gradMax);
+  const botPx = yScale.getPixelForValue(gradMin);
+
+  const key = `_focusedGrad_${datasetIndex}`;
+  const prev = chart[key];
+
+  if (prev &&
+      prev._min === gradMin &&
+      prev._max === gradMax &&
+      prev._topPx === topPx &&
+      prev._botPx === botPx) {
+    return prev.gradient;
+  }
+
+  const g = ctx.createLinearGradient(0, topPx, 0, botPx);
+  g.addColorStop(0,   topColor);
+  g.addColorStop(0.5, midColor);
+  g.addColorStop(1,   bottomColor);
+
+  chart[key] = {
+    gradient: g,
+    _min: gradMin,
+    _max: gradMax,
+    _topPx: topPx,
+    _botPx: botPx
+  };
+
+  return g;
+}
+
+
+// -----------------------------------------------------------
+// BOX PLOT HELPERS (no external plugins)
+// -----------------------------------------------------------
+
+// Quantile with linear interpolation (expects sorted ascending)
+function quantileSorted(sorted, p) {
+  const n = sorted.length;
+  if (n === 0) return NaN;
+  if (n === 1) return sorted[0];
+  const idx = (n - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  const h = idx - lo;
+  return (1 - h) * sorted[lo] + h * sorted[hi];
+}
+
+function buildTempBoxStats(log) {
+  const groups = new Map();
+
+  (log || []).forEach(e => {
+    const t = Number(e?.temp);
+    const v = Number(e?.efficiency);
+    const hs = Number(e?.heatSoak);
+    if (!Number.isFinite(t) || !Number.isFinite(v)) return;
+
+    if (!groups.has(t)) groups.set(t, { eff: [], soak: [] });
+    const bucket = groups.get(t);
+    bucket.eff.push(v);
+    if (Number.isFinite(hs)) bucket.soak.push(hs);
+  });
+
+  const temps = Array.from(groups.keys()).sort((a, b) => a - b);
+  const labels = temps.map(t => `${t}°F`);
+
+  const stats = [];
+  const outliers = [];
+
+  temps.forEach((t, idx) => {
+    const bucket = groups.get(t) || { eff: [], soak: [] };
+    const vals = (bucket.eff || []).slice().sort((a, b) => a - b);
+    const avgHeatSoak = (bucket.soak && bucket.soak.length)
+      ? (bucket.soak.reduce((s, x) => s + x, 0) / bucket.soak.length)
+      : NaN;
+    const n = vals.length;
+
+    const q1 = quantileSorted(vals, 0.25);
+    const median = quantileSorted(vals, 0.50);
+    const q3 = quantileSorted(vals, 0.75);
+    const iqr = (Number.isFinite(q3) && Number.isFinite(q1)) ? (q3 - q1) : 0;
+
+    const lowerFence = q1 - 1.5 * iqr;
+    const upperFence = q3 + 1.5 * iqr;
+
+    const inliers = vals.filter(v => v >= lowerFence && v <= upperFence);
+    const min = inliers.length ? inliers[0] : vals[0];
+    const max = inliers.length ? inliers[inliers.length - 1] : vals[vals.length - 1];
+
+    // Collect outliers as points
+    vals.forEach(v => {
+      if (v < lowerFence || v > upperFence) {
+        outliers.push({ x: labels[idx], y: v });
+      }
+    });
+
+    stats.push({
+      temp: t,
+      label: labels[idx],
+      n,
+      avgHeatSoak,
+      min,
+      q1,
+      median,
+      q3,
+      max,
+      iqr,
+      lowerFence,
+      upperFence
+    });
+  });
+
+  return { labels, stats, outliers };
+}
+
+// Draw whiskers + median line + caps on top of the IQR floating bars
+const boxWhiskerPlugin = {
+  id: 'vapcalcBoxWhiskers',
+  afterDatasetsDraw(chart) {
+    const stats = chart?.$boxStats;
+    if (!Array.isArray(stats) || !stats.length) return;
+
+    const xScale = chart.scales?.x;
+    const yScale = chart.scales?.y;
+    if (!xScale || !yScale) return;
+
+    const ctx = chart.ctx;
+    ctx.save();
+
+    const stroke = 'limegreen';
+    ctx.strokeStyle = stroke;
+    ctx.fillStyle = stroke;
+    ctx.lineWidth = 2;
+
+    // Estimate a sensible half-width for box/whisker caps
+    let capHalf = 10;
+    if (stats.length >= 2) {
+      const x0 = xScale.getPixelForValue(stats[0].label);
+      const x1 = xScale.getPixelForValue(stats[1].label);
+      const step = Math.abs(x1 - x0) || 1;
+      capHalf = Math.max(6, Math.min(18, step * 0.18));
+    }
+
+    const boxHalf = capHalf * 1.6;
+
+    stats.forEach(s => {
+      const x = xScale.getPixelForValue(s.label);
+      const yMin = yScale.getPixelForValue(s.min);
+      const yQ1 = yScale.getPixelForValue(s.q1);
+      const yMed = yScale.getPixelForValue(s.median);
+      const yQ3 = yScale.getPixelForValue(s.q3);
+      const yMax = yScale.getPixelForValue(s.max);
+
+      // Whisker lines
+      ctx.beginPath();
+      ctx.moveTo(x, yMin);
+      ctx.lineTo(x, yQ1);
+      ctx.moveTo(x, yQ3);
+      ctx.lineTo(x, yMax);
+      ctx.stroke();
+
+      // T-caps at min/max
+      ctx.beginPath();
+      ctx.moveTo(x - capHalf, yMin);
+      ctx.lineTo(x + capHalf, yMin);
+      ctx.moveTo(x - capHalf, yMax);
+      ctx.lineTo(x + capHalf, yMax);
+      ctx.stroke();
+
+      // Median line across the box
+      ctx.beginPath();
+      ctx.moveTo(x - boxHalf, yMed);
+      ctx.lineTo(x + boxHalf, yMed);
+      ctx.stroke();
+    });
+
+    ctx.restore();
+  }
+};
+
+try { Chart.register(boxWhiskerPlugin); } catch (e) {}
+
+// -----------------------------------------------------------
+// CHART INITIALIZATION
+// -----------------------------------------------------------
+
+function initializeCharts() {
+  const c1 = document.getElementById('efficiencyChart');
+  const c2 = document.getElementById('tempVsEfficiencyChart');
+  if (!c1 || !c2) return;
+
+  const ctx1 = c1.getContext('2d');
+  const ctx2 = c2.getContext('2d');
+
+  efficiencyChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Efficiency (%)',
+        data: [],
+        borderColor: ctx =>
+          makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: false,
+          min: 25,
+          max: 60,
+          ticks: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 12
+            }
+          },
+          title: {
+            display: true,
+            text: 'Efficiency (%)',
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Black',
+              size: 14
+            }
+          },
+          grid: {
+            color: 'rgba(0, 255, 0, 0.1)'
+          }
+        },
+        x: {
+          ticks: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 12
+            }
+          },
+          title: {
+            display: true,
+            text: 'Trial Number',
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Black',
+              size: 14
+            }
+          },
+          grid: {
+            color: 'rgba(0, 255, 0, 0.1)'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: 'limegreen',
+            font: {
+              family: 'Eurostile Extended Regular',
+              size: 14
+            },
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Vaporization Efficiency Over Time',
+          font: {
+            family: 'Eurostile Black',
+            size: 16
+          },
+          color: 'limegreen',
+          padding: { top: 10, bottom: 20 }
+        },
+        tooltip: {
+          backgroundColor: '#111',
+          titleColor: 'limegreen',
+          bodyColor: 'limegreen',
+          borderColor: (ctx) => makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+          borderWidth: 1,
+          titleFont: {
+            family: 'Eurostile Black',
+            size: 14
+          },
+          bodyFont: {
+            family: 'Eurostile Extended Regular',
+            size: 13
+          }
+        }
+      }
+    }
+  });
+
+  tempVsEfficiencyChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        // Floating bar from Q1 -> Q3 (IQR box)
+        {
+          label: 'Interquartile Range',
+          data: [],
+          backgroundColor: 'rgba(0, 255, 0, 0.18)',
+          borderColor: 'limegreen',
+          borderWidth: 2,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.8
+        },
+        // Outliers as points (optional)
+        {
+          label: 'Outliers',
+          type: 'scatter',
+          data: [],
+          borderColor: 'limegreen',
+          backgroundColor: 'limegreen',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: true },
+      scales: {
+        y: {
+          min: (scale) => {
+            const stats = scale.chart.$boxStats;
+            if (!stats || stats.length === 0) return 0;
+            const minValue = Math.min(...stats.map(s => s.min));
+            return Math.max(0, minValue - 5);
+          },
+          max: (scale) => {
+            const stats = scale.chart.$boxStats;
+            if (!stats || stats.length === 0) return 100;
+            const maxValue = Math.max(...stats.map(s => s.max));
+            return Math.min(100, maxValue + 5);
+          },
+          ticks: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 12 }
+          },
+          title: {
+            display: true,
+            text: 'Efficiency (%)',
+            color: 'limegreen',
+            font: { family: 'Eurostile Black', size: 14 }
+          },
+          grid: { color: 'rgba(0, 255, 0, 0.1)' }
+        },
+        x: {
+          type: 'category',
+          ticks: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 12 }
+          },
+          title: {
+            display: true,
+            text: 'Temperature (°F)',
+            color: 'limegreen',
+            font: { family: 'Eurostile Black', size: 14 }
+          },
+          grid: { color: 'rgba(0, 255, 0, 0.1)' }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: 'limegreen',
+            font: { family: 'Eurostile Extended Regular', size: 14 },
+            usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: 'Temperature vs. Vaporization Efficiency',
+          font: { family: 'Eurostile Black', size: 16 },
+          color: 'limegreen',
+          padding: { top: 10, bottom: 20 }
+        },
+        tooltip: {
+          backgroundColor: '#111',
+          titleColor: 'limegreen',
+          bodyColor: 'limegreen',
+          borderColor: (ctx) => makeVerticalGradientFocused(ctx.chart, ctx.datasetIndex, "orangered", "gold", "lime"),
+          borderWidth: 1,
+          titleFont: { family: 'Eurostile Black', size: 14 },
+          bodyFont: { family: 'Eurostile Extended Regular', size: 13 },
+          callbacks: {
+            title: function(items) {
+              const i = items?.[0]?.dataIndex ?? 0;
+              const s = tempVsEfficiencyChart?.$boxStats?.[i];
+              return s ? `Temp: ${s.temp}°F (n=${s.n})` : (items?.[0]?.label || '');
+            },
+            label: function(context) {
+              // Dataset 0 = box (IQR). Dataset 1 = outlier point.
+              if (context.datasetIndex === 1) {
+                return `Outlier: ${context.parsed.y.toFixed(1)}%`;
+              }
+              const i = context.dataIndex;
+              const s = tempVsEfficiencyChart?.$boxStats?.[i];
+              if (!s) return '';
+              return [
+                `Max: ${s.max.toFixed(1)}%`,
+                `Q3:   ${s.q3.toFixed(1)}%`,
+                `Median: ${s.median.toFixed(1)}%`,
+                `Q1:   ${s.q1.toFixed(1)}%`,
+                `Min:  ${s.min.toFixed(1)}%`,
+                `Avg. heat soak: ${Number.isFinite(s.avgHeatSoak) ? s.avgHeatSoak.toFixed(1) : '—'}s`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+  }
+
+function getRecentChartRows(limit = CHART_HISTORY_LIMIT) {
+  const rows = nativeSessionStore && Array.isArray(nativeChartLog) && nativeChartLog.length ? nativeChartLog.slice() : (Array.isArray(sessionLog) ? sessionLog.slice() : []);
+  rows.sort((a, b) => {
+    const ta = Date.parse(a?.timestamp || '');
+    const tb = Date.parse(b?.timestamp || '');
+    if (Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return ta - tb;
+    return (Number(a?.trialId) || 0) - (Number(b?.trialId) || 0);
+  });
+  return rows.slice(-limit);
+}
+
+function updateCharts() {
+  if (!efficiencyChart || !tempVsEfficiencyChart) return;
+
+  const chartRows = getRecentChartRows(CHART_HISTORY_LIMIT);
+  const labels = chartRows.map(entry => `Trial ${entry.trialId ?? ''}`);
+  const efficiencies = chartRows.map(entry => entry.efficiency);
+
+  efficiencyChart.data.labels = labels;
+  efficiencyChart.data.datasets[0].data = efficiencies;
+  efficiencyChart.update();
+
+  const box = nativeSessionStore && nativeBoxSummary
+    ? nativeBoxSummary
+    : buildTempBoxStats(sessionLog);
+
+  tempVsEfficiencyChart.data.labels = box.labels || [];
+  tempVsEfficiencyChart.data.datasets[0].data = (box.stats || []).map(s => [s.q1, s.q3]);
+  tempVsEfficiencyChart.data.datasets[1].data = box.outliers || [];
+  tempVsEfficiencyChart.$boxStats = box.stats || [];
+  tempVsEfficiencyChart.update();
+}
+
+function updateStats() {
+  const summary = nativeSessionStore && nativeStatsSummary ? nativeStatsSummary : null;
+
+  if (summary && Number(summary.count) > 0) {
+    document.getElementById('avgEfficiency').textContent = Number(summary.avgEfficiency || 0).toFixed(1) + '%';
+    document.getElementById('maxEfficiency').textContent = Number(summary.maxEfficiency || 0).toFixed(1) + '%';
+    document.getElementById('avgTemperature').textContent = Number(summary.avgTemp || 0).toFixed(0) + '°F';
+    document.getElementById('avgHeatSoak').textContent = Number(summary.avgHeatSoak || 0).toFixed(1) + 's';
+    return;
+  }
+
+  if (sessionLog.length === 0) {
+    document.getElementById('avgEfficiency').textContent = '0.0%';
+    document.getElementById('maxEfficiency').textContent = '0.0%';
+    document.getElementById('avgTemperature').textContent = '0°F';
+    document.getElementById('avgHeatSoak').textContent = '0s';
+    return;
+  }
+
+  const avgEfficiency = sessionLog.reduce((s, e) => s + e.efficiency, 0) / sessionLog.length;
+  const maxEfficiency = Math.max(...sessionLog.map(e => e.efficiency));
+  const avgTemp = sessionLog.reduce((s, e) => s + e.temp, 0) / sessionLog.length;
+  const avgHeatSoak = sessionLog.reduce((s, e) => s + e.heatSoak, 0) / sessionLog.length;
+
+  document.getElementById('avgEfficiency').textContent = avgEfficiency.toFixed(1) + '%';
+  document.getElementById('maxEfficiency').textContent = maxEfficiency.toFixed(1) + '%';
+  document.getElementById('avgTemperature').textContent = avgTemp.toFixed(0) + '°F';
+  document.getElementById('avgHeatSoak').textContent = avgHeatSoak.toFixed(1) + 's';
+}
+
+function calculateEfficiency() {
+  try {
+    const startingMassInput = document.getElementById('startingMass');
+    const endingMassInput = document.getElementById('endingMass');
+    const concentrateInput = document.getElementById('massWithConcentrate');
+    const startingMass = parseFloat(startingMassInput?.value ?? '');
+    const endingMass = parseFloat(endingMassInput?.value ?? '');
+    const mwcRaw = String(concentrateInput?.value ?? '').trim();
+    let massWithConcentrate = parseFloat(mwcRaw);
+
+    if (mwcRaw === '' || isNaN(massWithConcentrate)) {
+      massWithConcentrate = startingMass;
+    }
+
+    if (isNaN(startingMass) || isNaN(endingMass)) {
+      console.warn('[VapCalcJS] calculateEfficiency missing mass values');
+      alert('Please enter both Starting Mass and Ending Mass.');
+      return;
+    }
+
+    if (massWithConcentrate < startingMass || endingMass > massWithConcentrate) {
+      console.warn('[VapCalcJS] calculateEfficiency inconsistent masses');
+      alert('Mass values are inconsistent.');
+      return;
+    }
+
+    const concentrateMass = massWithConcentrate - startingMass;
+    const massLost = massWithConcentrate - endingMass;
+    const efficiency = (massLost / massWithConcentrate) * 100;
+    const waxMassMg = concentrateMass * 1000;
+
+    const massLostEl = document.getElementById('massLost');
+    const efficiencyEl = document.getElementById('efficiency');
+    const waxMassEl = document.getElementById('waxMass');
+    if (!massLostEl || !efficiencyEl || !waxMassEl) {
+      console.error('[VapCalcJS] calculateEfficiency missing result elements');
+      return;
+    }
+
+    massLostEl.textContent = massLost.toFixed(3);
+    efficiencyEl.textContent = efficiency.toFixed(1);
+    waxMassEl.textContent = waxMassMg.toFixed(1);
+  } catch (error) {
+    console.error(`[VapCalcJS] calculateEfficiency failed ${error?.message || error}`);
+    throw error;
+  }
+}
+window.calculateEfficiency = calculateEfficiency;
+
+function sendNativeCommand(command, options = {}) {
+  if (!window.webkit?.messageHandlers?.vapcalcNative) return false;
+  const size = payloadByteSize(command);
+  const cmd = command?.cmd || 'unknown';
+  console.log(`[VapCalcJS] postMessage ${cmd} payload=${size} bytes`);
+  if (size > 100 * 1024) {
+    console.warn(`[VapCalcJS] ${cmd} payload exceeded 100KB (${size} bytes)`);
+    if (!options.allowLarge) {
+      console.error(`[VapCalcJS] Rejected oversized payload for ${cmd}`);
+      return false;
+    }
+  }
+  window.webkit.messageHandlers.vapcalcNative.postMessage(command);
+  return true;
+}
+
+function requestNativeRefresh(options = {}) {
+  if (!nativeSessionStore && !window.webkit?.messageHandlers?.vapcalcNative) return false;
+  pendingNativeRefresh = true;
+  return sendNativeCommand({
+    cmd: 'getSessionPage',
+    limit: SESSION_PAGE_SIZE,
+    offset: Number.isFinite(options.offset) ? options.offset : sessionPageOffset,
+    sort: options.sort || currentSortColumn,
+    direction: options.direction || currentSortDirection
+  });
+}
+
+function refreshAfterNativeMutation() {
+  requestNativeRefresh();
+}
+
+function addToLog() {
+  try {
+    const tempInput = document.getElementById('temperature');
+    const heatSoakInput = document.getElementById('heatSoak');
+    const startingMassInput = document.getElementById('startingMass');
+    const endingMassInput = document.getElementById('endingMass');
+    const concentrateInput = document.getElementById('massWithConcentrate');
+    const temp = parseFloat(tempInput?.value ?? '');
+    const heatSoak = parseFloat(heatSoakInput?.value ?? '');
+    const startingMass = parseFloat(startingMassInput?.value ?? '');
+    const endingMass = parseFloat(endingMassInput?.value ?? '');
+    const mwcRaw = String(concentrateInput?.value ?? '').trim();
+    const timestamp = new Date().toISOString();
+    let massWithConcentrate = parseFloat(mwcRaw);
+
+    if (mwcRaw === '' || isNaN(massWithConcentrate)) {
+      massWithConcentrate = startingMass;
+    }
+
+    if (isNaN(startingMass) || isNaN(endingMass)) {
+      console.warn('[VapCalcJS] addToLog missing mass values');
+      alert('Please enter both Starting Mass and Ending Mass before logging.');
+      return;
+    }
+
+    if (massWithConcentrate < startingMass || endingMass > massWithConcentrate) {
+      console.warn('[VapCalcJS] addToLog inconsistent masses');
+      alert('Mass values are inconsistent, cannot add to log.');
+      return;
+    }
+
+    const concentrateMass = massWithConcentrate - startingMass;
+    const massLost = massWithConcentrate - endingMass;
+    const efficiency = (massLost / massWithConcentrate) * 100;
+    const waxMass = concentrateMass * 1000;
+
+    const entry = {
+      temp,
+      heatSoak,
+      startingMass,
+      endingMass,
+      concentrateMass,
+      massLost,
+      efficiency,
+      waxMass,
+      timestamp
+    };
+
+    if (nativeSessionStore && sendNativeCommand({
+      cmd: 'appendSession',
+      record: entry,
+      limit: SESSION_PAGE_SIZE,
+      offset: 0,
+      sort: currentSortColumn,
+      direction: currentSortDirection
+    })) {
+      sessionPageOffset = 0;
+      return;
+    }
+
+    sessionLog.push(entry);
+    sessionPageOffset = 0;
+    updateLog();
+    updateCharts();
+    updateStats();
+    scheduleNativeSave();
+  } catch (error) {
+    console.error(`[VapCalcJS] addToLog failed ${error?.message || error}`);
+    throw error;
+  }
+}
+window.addToLog = addToLog;
+
+function createLogRow(entry, index) {
+  const tr = document.createElement('tr');
+
+  const cells = [
+    entry.trialId,
+    entry.temp,
+    entry.heatSoak.toFixed(1),
+    entry.startingMass.toFixed(3),
+    entry.waxMass.toFixed(1),
+    entry.endingMass.toFixed(3),
+    entry.massLost.toFixed(3),
+    entry.efficiency.toFixed(1)
+  ];
+
+  cells.forEach(val => {
+    const td = document.createElement('td');
+    td.textContent = val;
+    tr.appendChild(td);
+  });
+
+  const timeTd = document.createElement('td');
+  timeTd.textContent = '📅';
+  timeTd.title = formatTimestamp(entry.timestamp);
+  tr.appendChild(timeTd);
+
+  const actionsTd = document.createElement('td');
+  const editBtn = document.createElement('button');
+  editBtn.className = 'action-btn edit-btn';
+  editBtn.textContent = '✏️';
+  editBtn.addEventListener('click', () => editTrial(index));
+  actionsTd.appendChild(editBtn);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'action-btn remove-btn';
+  removeBtn.textContent = '🗑️';
+  removeBtn.addEventListener('click', () => removeTrial(index));
+  actionsTd.appendChild(removeBtn);
+
+  tr.appendChild(actionsTd);
+  return tr;
+}
+
+function updateLog() {
+  const logBody = document.getElementById('logBody');
+  if (!logBody) return;
+
+  const fragment = document.createDocumentFragment();
+  const rows = Array.isArray(sessionLog) ? sessionLog : [];
+  rows.forEach((entry, index) => {
+    fragment.appendChild(createLogRow(entry, index));
+  });
+
+  logBody.replaceChildren(fragment);
+  updateSessionLogStatus();
+}
+
+function rebuildNativeVisibleSessionLog() {
+  sessionLog = sessionBasePage.concat(sessionLoadMorePage);
+}
+
+function clearNativeLoadMorePage() {
+  sessionLoadMorePage = [];
+  sessionPageOffset = 0;
+  rebuildNativeVisibleSessionLog();
+}
+
+function applyNativeSessionPage(page, offset) {
+  const normalizedPage = Array.isArray(page)
+    ? page.map((entry, index) => window.normalizeEntry(entry, index)).filter(Boolean)
+    : [];
+
+  if (!Number.isFinite(offset) || offset <= 0) {
+    sessionBasePage = normalizedPage;
+    clearNativeLoadMorePage();
+    return;
+  }
+
+  sessionLoadMorePage = normalizedPage;
+  sessionPageOffset = offset;
+  rebuildNativeVisibleSessionLog();
+}
+
+function updateSessionLogStatus() {
+  const status = document.getElementById('sessionLogStatus');
+  const loadMoreBtn = document.getElementById('sessionLogLoadMoreBtn');
+  const resetBtn = document.getElementById('sessionLogResetBtn');
+  const total = nativeSessionStore ? sessionTotalCount : sessionLog.length;
+  const visible = sessionLog.length;
+  const start = total === 0 ? 0 : 1;
+  const end = Math.min(visible, total);
+  if (status) status.textContent = `Showing ${start}-${end} of ${total} sessions`;
+  if (loadMoreBtn) {
+    if (nativeSessionStore) {
+      const nextOffset = (sessionPageOffset || 0) + SESSION_PAGE_STEP;
+      loadMoreBtn.disabled = total <= SESSION_PAGE_SIZE || nextOffset >= total;
+    } else {
+      loadMoreBtn.disabled = total <= SESSION_PAGE_SIZE || (sessionPageOffset + visible) >= total;
+    }
+  }
+  if (resetBtn) resetBtn.disabled = sessionPageOffset === 0;
+}
+
+function loadMoreSessions() {
+  if (nativeSessionStore) {
+    const total = sessionTotalCount;
+    const nextOffset = Math.min((sessionPageOffset || 0) + SESSION_PAGE_STEP, Math.max(SESSION_PAGE_STEP, total - 1));
+    sessionPageOffset = nextOffset;
+    requestNativeRefresh({ offset: nextOffset });
+    return;
+  }
+
+  const total = sessionLog.length;
+  sessionPageOffset = Math.min(sessionPageOffset + SESSION_PAGE_STEP, Math.max(0, total - 1));
+  updateLog();
+}
+
+function resetSessionPage() {
+  if (nativeSessionStore) {
+    clearNativeLoadMorePage();
+    updateLog();
+    return;
+  }
+
+  sessionPageOffset = 0;
+  updateLog();
+}
+
+function formatTimestamp(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const options = {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  };
+  const parts = date.toLocaleString('en-US', options).replace(',', '').split(' ');
+  return `${parts[0]}_${parts[1]}_${parts[2]}_${parts[3]}_${parts[4]}`;
+}
+
+function createRemovedRow(entry, index) {
+  const tr = document.createElement('tr');
+
+  const cells = [
+    entry.originalIndex,
+    entry.temp,
+    entry.heatSoak.toFixed(1),
+    entry.startingMass.toFixed(3),
+    entry.waxMass.toFixed(1),
+    entry.endingMass.toFixed(3),
+    entry.massLost.toFixed(3),
+    entry.efficiency.toFixed(1)
+  ];
+
+  cells.forEach(val => {
+    const td = document.createElement('td');
+    td.textContent = val;
+    tr.appendChild(td);
+  });
+
+  const actionsTd = document.createElement('td');
+  const restoreBtn = document.createElement('button');
+  restoreBtn.className = 'action-btn';
+  restoreBtn.textContent = '🔄';
+  restoreBtn.addEventListener('click', () => restoreTrial(index));
+  actionsTd.appendChild(restoreBtn);
+
+  tr.appendChild(actionsTd);
+  return tr;
+}
+
+function updateRemovedLog() {
+  const removedBody = document.getElementById('removedBody');
+  if (!removedBody) return;
+
+  const fragment = document.createDocumentFragment();
+  removedLog.forEach((entry, index) => {
+    fragment.appendChild(createRemovedRow(entry, index));
+  });
+
+  removedBody.replaceChildren(fragment);
+}
+
+function editTrial(index) {
+  currentEditIndex = index;
+  const entry = sessionLog[index];
+
+  document.getElementById('editTemperature').value = entry.temp;
+  document.getElementById('editHeatSoak').value = entry.heatSoak;
+  document.getElementById('editStartingMass').value = entry.startingMass;
+  document.getElementById('editEndingMass').value = entry.endingMass;
+  document.getElementById('editConcentrateMass').value = entry.concentrateMass || '';
+  document.getElementById('editMassLost').textContent = entry.massLost.toFixed(3);
+  document.getElementById('editEfficiency').textContent = entry.efficiency.toFixed(1);
+
+  document.getElementById('editModal').style.display = 'block';
+}
+
+function removeTrial(index) {
+  const entry = sessionLog[index];
+  if (!entry) return;
+
+  if (nativeSessionStore && sendNativeCommand({
+    cmd: 'deleteSession',
+    id: entry.id ?? entry.trialId,
+    limit: SESSION_PAGE_SIZE,
+    offset: sessionPageOffset,
+    sort: currentSortColumn,
+    direction: currentSortDirection
+  })) {
+    return;
+  }
+
+  entry.originalIndex = entry.trialId || index + 1;
+  removedLog.push(entry);
+  sessionLog.splice(index, 1);
+
+  updateLog();
+  updateRemovedLog();
+  updateCharts();
+  updateStats();
+  scheduleNativeSave();
+}
+
+function restoreTrial(index) {
+  const entry = removedLog[index];
+  if (!entry) return;
+
+  if (nativeSessionStore && sendNativeCommand({
+    cmd: 'restoreSession',
+    id: entry.id ?? entry.trialId,
+    limit: SESSION_PAGE_SIZE,
+    offset: sessionPageOffset,
+    sort: currentSortColumn,
+    direction: currentSortDirection
+  })) {
+    return;
+  }
+
+  sessionLog.push(entry);
+  removedLog.splice(index, 1);
+
+  updateLog();
+  updateRemovedLog();
+  updateCharts();
+  updateStats();
+  scheduleNativeSave();
+}
+
+function saveEdit() {
+  if (currentEditIndex === null) return;
+
+  const temp = parseFloat(document.getElementById('editTemperature').value);
+  const heatSoak = parseFloat(document.getElementById('editHeatSoak').value);
+  const startingMass = parseFloat(document.getElementById('editStartingMass').value);
+  const endingMass = parseFloat(document.getElementById('editEndingMass').value);
+  let concentrateMass = parseFloat(document.getElementById('editConcentrateMass').value);
+
+  if (isNaN(concentrateMass) || concentrateMass < startingMass) {
+    concentrateMass = startingMass;
+  }
+
+  const massLost = concentrateMass - endingMass;
+  const efficiency = (massLost / concentrateMass) * 100;
+  const waxMass = (concentrateMass - startingMass) * 1000;
+
+  const entry = {
+    ...sessionLog[currentEditIndex],
+    temp,
+    heatSoak,
+    startingMass,
+    endingMass,
+    concentrateMass,
+    massLost,
+    efficiency,
+    waxMass
+  };
+
+  if (nativeSessionStore && sendNativeCommand({
+    cmd: 'updateSession',
+    id: entry.id ?? entry.trialId,
+    patch: entry,
+    limit: SESSION_PAGE_SIZE,
+    offset: sessionPageOffset,
+    sort: currentSortColumn,
+    direction: currentSortDirection
+  })) {
+    currentEditIndex = null;
+    document.getElementById('editModal').style.display = 'none';
+    return;
+  }
+
+  sessionLog[currentEditIndex] = entry;
+  currentEditIndex = null;
+
+  document.getElementById('editModal').style.display = 'none';
+  updateLog();
+  updateCharts();
+  updateStats();
+  scheduleNativeSave();
+}
+
+function cancelEdit() {
+  currentEditIndex = null;
+  document.getElementById('editModal').style.display = 'none';
+}
+
+function downloadCSV() {
+  if (nativeSessionStore && sendNativeCommand({ cmd: 'exportCSV', suggestedName: 'vaporizer_sessions.csv' })) {
+    return;
+  }
+
+  let csv = 'Trial,Temp,HeatSoak,StartingMass,EndingMass,ConcentrateMass,MassLost,Efficiency,WaxMass,Timestamp\n';
+  sessionLog.forEach(entry => {
+    csv += `${entry.trialId},${entry.temp},${entry.heatSoak},${entry.startingMass},${entry.endingMass},${entry.concentrateMass},${entry.massLost},${entry.efficiency},${entry.waxMass},"${entry.timestamp}"\n`;
+  });
+
+  if (window.webkit?.messageHandlers?.vapcalcNative) {
+    sendNativeCommand({
+      cmd: 'saveCSV',
+      csvText: csv,
+      suggestedName: 'vaporizer_sessions.csv'
+    });
+    return;
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vaporizer_sessions.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function uploadCSV() {
+  if (nativeSessionStore && sendNativeCommand({
+    cmd: 'importCSV',
+    limit: SESSION_PAGE_SIZE,
+    offset: 0,
+    sort: currentSortColumn,
+    direction: currentSortDirection
+  })) {
+    sessionPageOffset = 0;
+    return;
+  }
+  const input = document.getElementById('csvUpload');
+  if (input) input.click();
+}
+
+function handleCSVUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const rows = text.split('\n');
+
+    rows.shift(); // header
+
+    sessionLog = rows.map(row => {
+      if (!row.trim()) return null;
+      const parts = row.split(',');
+      if (parts.length < 9) return null;
+
+      const [
+        trialId, temp, heatSoak, startingMass, endingMass,
+        concentrateMass, massLost, efficiency, waxMass, timestamp
+      ] = parts;
+
+
+      return {
+        trialId: parseInt(trialId),
+        temp: parseFloat(temp),
+        heatSoak: parseFloat(heatSoak),
+        startingMass: parseFloat(startingMass),
+        endingMass: parseFloat(endingMass),
+        concentrateMass: parseFloat(concentrateMass),
+        massLost: parseFloat(massLost),
+        efficiency: parseFloat(efficiency),
+        waxMass: parseFloat(waxMass),
+        timestamp: timestamp ? timestamp.trim().replace(/"/g, '') : null
+      };
+    }).filter(entry => entry && !isNaN(entry.temp));
+
+    if (nativeSessionStore && sendNativeCommand({
+      cmd: 'importSessions',
+      limit: SESSION_PAGE_SIZE,
+      offset: 0,
+      sort: currentSortColumn,
+      direction: currentSortDirection
+    })) {
+      sessionPageOffset = 0;
+      return;
+    }
+
+    updateLog();
+    updateCharts();
+    updateStats();
+    scheduleNativeSave();
+  };
+  reader.readAsText(file);
+}
+
+function resetCachedForm() {
+  cachedFields.forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.value = '';
+    resetHistoryCursor(id);
+  });
+  scheduleNativeSave();
+}
+window.resetCachedForm = resetCachedForm;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const calculateBtn = document.getElementById('calculateBtn');
+  const addLogBtn = document.getElementById('addLogBtn');
+  const downloadCSVBtn = document.getElementById('downloadCSVBtn');
+  const uploadCSVBtn = document.getElementById('uploadCSVBtn');
+  const csvUploadInput = document.getElementById('csvUpload');
+  const closeModalBtn = document.getElementById('closeModal');
+  const saveEditBtn = document.getElementById('saveEdit');
+  const cancelEditBtn = document.getElementById('cancelEdit');
+  const removedToggleBtn = document.getElementById('removedToggle');
+
+  downloadCSVBtn?.addEventListener('click', downloadCSV);
+  document.getElementById('sessionLogLoadMoreBtn')?.addEventListener('click', loadMoreSessions);
+  document.getElementById('sessionLogResetBtn')?.addEventListener('click', resetSessionPage);
+  uploadCSVBtn?.addEventListener('click', uploadCSV);
+  csvUploadInput?.addEventListener('change', handleCSVUpload);
+  closeModalBtn?.addEventListener('click', cancelEdit);
+  saveEditBtn?.addEventListener('click', saveEdit);
+  cancelEditBtn?.addEventListener('click', cancelEdit);
+
+  try {
+    initializeCharts();
+  } catch (error) {
+    console.error('[VapCalcJS] initializeCharts failed', error);
+  }
+
+  try {
+    cachedFields.forEach(id => {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('input', () => {
+          if (input.dataset.historyKey && document.activeElement === input) {
+            resetHistoryCursor(input.dataset.historyKey);
+          }
+          scheduleNativeSave();
+        });
+        input.addEventListener('change', scheduleNativeSave);
+      }
+    });
+
+    document.querySelectorAll('.number-input-wrapper').forEach(wrapper => {
+      const input = wrapper.querySelector('input[type=number]');
+      if (!input) return;
+
+      if (!wrapper.querySelector('.spinner-up')) {
+        const spinnerUp = document.createElement('button');
+        spinnerUp.className = 'spinner-btn spinner-up';
+        spinnerUp.type = 'button';
+        spinnerUp.setAttribute('aria-label', 'Increase value');
+        spinnerUp.setAttribute('tabindex', '-1');
+        spinnerUp.innerHTML = '▲';
+
+        spinnerUp.addEventListener('click', e => {
+          e.preventDefault();
+          input.stepUp();
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        wrapper.appendChild(spinnerUp);
+      }
+
+      if (!wrapper.querySelector('.spinner-down')) {
+        const spinnerDown = document.createElement('button');
+        spinnerDown.className = 'spinner-btn spinner-down';
+        spinnerDown.type = 'button';
+        spinnerDown.setAttribute('aria-label', 'Decrease value');
+        spinnerDown.setAttribute('tabindex', '-1');
+        spinnerDown.innerHTML = '▼';
+
+        spinnerDown.addEventListener('click', e => {
+          e.preventDefault();
+          input.stepDown();
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        wrapper.appendChild(spinnerDown);
+      }
+
+      if (input.dataset.historyKey && !wrapper.querySelector('.history-btn')) {
+        const historyUp = document.createElement('button');
+        historyUp.className = 'spinner-btn history-btn history-up';
+        historyUp.type = 'button';
+        historyUp.setAttribute('aria-label', `Previous ${input.dataset.historyKey} value`);
+        historyUp.setAttribute('tabindex', '-1');
+        historyUp.innerHTML = '⟰';
+
+        const historyDown = document.createElement('button');
+        historyDown.className = 'spinner-btn history-btn history-down';
+        historyDown.type = 'button';
+        historyDown.setAttribute('aria-label', `Next ${input.dataset.historyKey} value`);
+        historyDown.setAttribute('tabindex', '-1');
+        historyDown.innerHTML = '⟱';
+
+        historyUp.addEventListener('click', e => {
+          e.preventDefault();
+          cycleHistoryValue(input, 1);
+        });
+
+        historyDown.addEventListener('click', e => {
+          e.preventDefault();
+          cycleHistoryValue(input, -1);
+        });
+
+        wrapper.appendChild(historyUp);
+        wrapper.appendChild(historyDown);
+      }
+    });
+
+    removedToggleBtn?.addEventListener('click', () => {
+      const container = document.getElementById('removedContainer');
+      const icon = document.querySelector('.toggle-icon');
+      if (!container || !icon) return;
+      container.classList.toggle('open');
+      icon.textContent = container.classList.contains('open') ? '▲' : '▼';
+    });
+  } catch (error) {
+    console.error('[VapCalcJS] startup wiring failed', error);
+  }
+});
+
+// Draggable divider
+(() => {
+  const divider = document.getElementById('divider');
+  const leftCol = document.querySelector('.column.left');
+  const rightCol = document.querySelector('.column.right');
+  const container = divider?.parentElement;
+  if (!divider || !leftCol || !rightCol || !container) return;
+
+  let isResizing = false;
+  const DEFAULT_LEFT_RATIO = 1 / 3;
+  const SNAP_TOLERANCE_PX = 10;
+  const MIN_LEFT_PX = 180;
+  const MIN_RIGHT_PX = 260;
+
+  function getGapPx() {
+    const styles = window.getComputedStyle(container);
+    const gap = parseFloat(styles.columnGap || styles.gap || '0');
+    return Number.isFinite(gap) ? gap : 0;
+  }
+
+  function getAvailableWidth() {
+    const rect = container.getBoundingClientRect();
+    const gapPx = getGapPx();
+    const dividerWidth = divider.getBoundingClientRect().width || divider.offsetWidth || 5;
+    return Math.max(0, rect.width - dividerWidth - (gapPx * 2));
+  }
+
+  function applyLeftPx(leftPx) {
+    const availableWidth = getAvailableWidth();
+    if (!availableWidth) return;
+
+    const maxLeft = Math.max(MIN_LEFT_PX, availableWidth - MIN_RIGHT_PX);
+    const minLeft = Math.min(MIN_LEFT_PX, maxLeft);
+    const clampedLeft = Math.max(minLeft, Math.min(maxLeft, leftPx));
+    const defaultLeftPx = availableWidth * DEFAULT_LEFT_RATIO;
+
+    leftCol.style.flex = `0 0 ${clampedLeft}px`;
+    leftCol.style.width = `${clampedLeft}px`;
+    rightCol.style.flex = '1 1 0';
+    rightCol.style.width = 'auto';
+    rightCol.style.minWidth = '0';
+
+    if (Math.abs(clampedLeft - defaultLeftPx) > SNAP_TOLERANCE_PX) {
+      divider.classList.add('moved');
+    } else {
+      divider.classList.remove('moved');
+    }
+  }
+
+  function resize(e) {
+    const rect = container.getBoundingClientRect();
+    const gapPx = getGapPx();
+    const dividerWidth = divider.getBoundingClientRect().width || divider.offsetWidth || 5;
+    const pointerLeftPx = e.clientX - rect.left - gapPx - (dividerWidth / 2);
+    applyLeftPx(pointerLeftPx);
+  }
+
+  function resetForSmallScreens() {
+    if (window.innerWidth <= 1024) {
+      leftCol.style.flex = '';
+      leftCol.style.width = '';
+      rightCol.style.flex = '';
+      rightCol.style.width = '';
+      divider.classList.remove('moved');
+      return true;
+    }
+    return false;
+  }
+
+  function syncLayoutToViewport() {
+    if (resetForSmallScreens()) return;
+
+    const currentLeft = leftCol.getBoundingClientRect().width;
+    const availableWidth = getAvailableWidth();
+    if (!availableWidth) return;
+
+    if (!currentLeft || Math.abs(currentLeft - availableWidth * DEFAULT_LEFT_RATIO) < 1) {
+      applyLeftPx(availableWidth * DEFAULT_LEFT_RATIO);
+    } else {
+      applyLeftPx(currentLeft);
+    }
+  }
+
+  function stopResize() {
+    if (!isResizing) return;
+    isResizing = false;
+    document.body.style.cursor = '';
+    document.removeEventListener('mousemove', resize);
+    document.removeEventListener('mouseup', stopResize);
+  }
+
+  divider.addEventListener('mousedown', (e) => {
+    if (window.innerWidth <= 1024) return;
+    e.preventDefault();
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+  });
+
+  window.addEventListener('resize', syncLayoutToViewport);
+  window.addEventListener('orientationchange', syncLayoutToViewport);
+  syncLayoutToViewport();
+})();
+
+// Sorting logic
+let sortDirection = 1;
+let lastSortColumn = null;
+
+const columnMap = [
+  null,          // Trial #
+  'temp',        // Temp
+  'heatSoak',    // Heat Soak
+  'startingMass',
+  'waxMass',
+  'endingMass',
+  'massLost',
+  'efficiency',
+  'timestamp'
+];
+
+function sortSessionLog(columnKey) {
+  if (!columnKey) return;
+
+  if (lastSortColumn === columnKey) {
+    sortDirection *= -1;
+  } else {
+    sortDirection = columnKey === 'timestamp' ? -1 : 1;
+    lastSortColumn = columnKey;
+  }
+
+  currentSortColumn = columnKey;
+  currentSortDirection = sortDirection === 1 ? 'asc' : 'desc';
+  sessionPageOffset = 0;
+
+  if (nativeSessionStore) {
+    requestNativeRefresh();
+    return;
+  }
+
+  sessionLog.sort((a, b) => {
+    const valA = a[columnKey];
+    const valB = b[columnKey];
+    if (columnKey === 'timestamp') return sortDirection * (new Date(valA) - new Date(valB));
+    return sortDirection * (((valA ?? 0) - (valB ?? 0)));
+  });
+
+  updateLog();
+  updateCharts();
+  updateStats();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sessionLogTable = document.querySelector('.section-card table');
+  if (!sessionLogTable) return;
+
+  const headers = sessionLogTable.querySelectorAll('thead tr th');
+  headers.forEach((th, idx) => {
+    const key = columnMap[idx];
+    if (!key) return;
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => sortSessionLog(key));
+  });
+});
+
+// Vape name + bold persistence
+function editVapeName() {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  const currentName = nameSpan.textContent || '';
+
+  if (window.webkit?.messageHandlers?.vapcalcNative) {
+    sendNativeCommand({
+      cmd: 'promptVapeName',
+      currentName
+    });
+    return;
+  }
+
+  const newName = window.prompt('Enter new vaporizer name:', currentName);
+  if (newName !== null) {
+    window.__vapcalcApplyVapeName(newName);
+  }
+}
+window.editVapeName = editVapeName;
+
+window.__vapcalcApplyVapeName = function __vapcalcApplyVapeName(newName) {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  const trimmed = String(newName ?? '').trim();
+  if (!trimmed) return;
+
+  nameSpan.textContent = trimmed;
+  scheduleNativeSave();
+};
+
+function toggleVapeBold() {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+
+  const isBold = nameSpan.classList.contains('font-euro-bold');
+
+  nameSpan.classList.toggle('font-euro-bold', !isBold);
+  nameSpan.classList.toggle('font-euro-regular', isBold);
+
+  scheduleNativeSave();
+}
+window.toggleVapeBold = toggleVapeBold;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const nameSpan = document.getElementById('vaporizerName');
+  if (!nameSpan) return;
+  nameSpan.classList.add('font-euro-regular');
+  nameSpan.classList.remove('font-euro-bold');
+});
+
+// Native-first persistence for macOS wrapper
+(function () {
+  let nativeSaveTimer = null;
+  const pendingResolvers = [];
+  const forbiddenUiStateKeys = new Set(['sessionLog', 'removedLog', 'deletedLog', 'records', 'deletedRecords']);
+
+  function sanitizeNumber(value, fallback = 0) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  window.normalizeEntry = function normalizeEntry(entry, index) {
+    if (!entry || typeof entry !== 'object') return null;
+
+    const startingMass = sanitizeNumber(entry.startingMass);
+    const endingMass = sanitizeNumber(entry.endingMass);
+    const concentrateMass = Number.isFinite(Number(entry.concentrateMass)) ? Number(entry.concentrateMass) : startingMass;
+    const massLost = Number.isFinite(Number(entry.massLost)) ? Number(entry.massLost) : (concentrateMass - endingMass);
+    const efficiency = Number.isFinite(Number(entry.efficiency)) ? Number(entry.efficiency) : (concentrateMass ? (massLost / concentrateMass) * 100 : 0);
+    const waxMass = Number.isFinite(Number(entry.waxMass)) ? Number(entry.waxMass) : ((concentrateMass - startingMass) * 1000);
+
+    const normalized = {
+      id: Number.isFinite(Number(entry.id)) ? Number(entry.id) : null,
+      trialId: sanitizeNumber(entry.trialId, index + 1),
+      temp: sanitizeNumber(entry.temp),
+      heatSoak: sanitizeNumber(entry.heatSoak),
+      startingMass,
+      endingMass,
+      concentrateMass,
+      massLost,
+      efficiency,
+      waxMass,
+      timestamp: entry.timestamp || new Date().toISOString()
+    };
+
+    if (Number.isFinite(Number(entry.originalIndex))) normalized.originalIndex = Number(entry.originalIndex);
+    if (entry.removed === true) normalized.removed = true;
+    return normalized;
+  };
+
+  function stripForbiddenUiStateKeys(uiState) {
+    const sanitized = {};
+    Object.entries(uiState || {}).forEach(([key, value]) => {
+      if (forbiddenUiStateKeys.has(key)) {
+        console.error(`[VapCalcJS] saveUiState stripped forbidden key ${key}`);
+        return;
+      }
+      if (Array.isArray(value) && value.length > 200) {
+        console.error(`[VapCalcJS] saveUiState stripped oversized array for ${key} (${value.length} items)`);
+        return;
+      }
+      sanitized[key] = value;
+    });
+    return sanitized;
+  }
+
+  function collectUiState() {
+    const cached = {};
+    cachedFields.forEach(id => {
+      const el = document.getElementById(id);
+      cached[id] = el ? el.value : '';
+    });
+
+    const nameSpan = document.getElementById('vaporizerName');
+
+    return {
+      cachedFields: cached,
+      vapeName: nameSpan ? nameSpan.textContent : 'QR Baller',
+      vapeBold: nameSpan && nameSpan.classList.contains('font-euro-bold') ? 'bold' : 'regular',
+      sessionPageOffset,
+      currentSortColumn,
+      currentSortDirection,
+      sessionPageSize: SESSION_PAGE_SIZE
+    };
+  }
+
+  function saveStateNow() {
+    if (nativeSaveTimer) {
+      clearTimeout(nativeSaveTimer);
+      nativeSaveTimer = null;
+    }
+
+    if (window.webkit?.messageHandlers?.vapcalcNative) {
+      sendNativeCommand({
+        cmd: 'saveUiState',
+        payload: stripForbiddenUiStateKeys(collectUiState())
+      });
+    }
+  }
+
+  window.scheduleNativeSave = function scheduleNativeSave() {
+    if (!nativeStateLoaded) return;
+    if (nativeSaveTimer) clearTimeout(nativeSaveTimer);
+    nativeSaveTimer = setTimeout(saveStateNow, 150);
+  };
+
+  window.nativeSaveState = function nativeSaveState(forceImmediate = false) {
+    if (forceImmediate) saveStateNow();
+    else window.scheduleNativeSave();
+  };
+
+  function applyNativePayload(payload) {
+    const safeState = payload && typeof payload === 'object' ? payload : {};
+    nativeSessionStore = !!safeState.nativeSessionStore;
+    const payloadOffset = Number.isFinite(Number(safeState.pageOffset)) ? Number(safeState.pageOffset) : 0;
+    applyNativeSessionPage(safeState.page, payloadOffset);
+    removedLog = Array.isArray(safeState.removedPage)
+      ? safeState.removedPage.map((entry, index) => window.normalizeEntry(entry, index)).filter(Boolean)
+      : [];
+
+    sessionTotalCount = Number.isFinite(Number(safeState.sessionTotalCount)) ? Number(safeState.sessionTotalCount) : sessionLog.length;
+    nativeBoxSummary = safeState.boxSummary || null;
+    nativeStatsSummary = safeState.statsSummary || null;
+    nativeFieldHistory = safeState.fieldHistory || { temperature: [], heatSoak: [] };
+    nativeChartLog = Array.isArray(safeState.chartLog) ? safeState.chartLog.map((entry, index) => window.normalizeEntry(entry, index)).filter(Boolean) : [];
+
+    const uiState = safeState.uiState && typeof safeState.uiState === 'object' ? safeState.uiState : safeState;
+    if (!Number.isFinite(Number(safeState.pageOffset)) && Number.isFinite(Number(uiState.sessionPageOffset))) {
+      sessionPageOffset = Number(uiState.sessionPageOffset);
+    }
+    if (typeof uiState.currentSortColumn === 'string') currentSortColumn = uiState.currentSortColumn;
+    if (typeof uiState.currentSortDirection === 'string') currentSortDirection = uiState.currentSortDirection;
+    sortDirection = currentSortDirection === 'asc' ? 1 : -1;
+    lastSortColumn = currentSortColumn;
+
+    const cached = uiState.cachedFields && typeof uiState.cachedFields === 'object' ? uiState.cachedFields : {};
+    cachedFields.forEach(id => {
+      const input = document.getElementById(id);
+      if (input && Object.prototype.hasOwnProperty.call(cached, id)) input.value = cached[id] ?? '';
+    });
+
+    const nameSpan = document.getElementById('vaporizerName');
+    if (nameSpan) {
+      nameSpan.textContent = uiState.vapeName || 'QR Baller';
+      if (uiState.vapeBold === 'bold') {
+        nameSpan.classList.add('font-euro-bold');
+        nameSpan.classList.remove('font-euro-regular');
+      } else {
+        nameSpan.classList.add('font-euro-regular');
+        nameSpan.classList.remove('font-euro-bold');
+      }
+    }
+
+    updateLog();
+    updateRemovedLog();
+    updateCharts();
+    updateStats();
+  }
+
+  window.__vapcalcNativeLoad = function __vapcalcNativeLoad(state) {
+    applyNativePayload(state);
+    nativeStateLoaded = true;
+    if (nativeSessionStore && sessionPageOffset > 0 && sessionBasePage.length) {
+      const savedOffset = sessionPageOffset;
+      clearNativeLoadMorePage();
+      requestNativeRefresh({ offset: savedOffset });
+    }
+    while (pendingResolvers.length) pendingResolvers.shift()();
+  };
+
+  window.__vapcalcNativeRefresh = function __vapcalcNativeRefresh(payload) {
+    pendingNativeRefresh = false;
+    applyNativePayload(payload);
+    nativeStateLoaded = true;
+  };
+
+  window.__vapcalcNativeImportResult = function __vapcalcNativeImportResult(result) {
+    const inserted = Number(result?.inserted || 0);
+    const skipped = Number(result?.skipped || 0);
+    const errors = Array.isArray(result?.errors) ? result.errors.filter(Boolean) : [];
+    if (errors.length) {
+      console.warn('[VapCalcJS] importCSV errors', errors);
+    }
+  };
+
+  window.__vapcalcNativeSessionCount = function __vapcalcNativeSessionCount(payload) {
+    if (Number.isFinite(Number(payload?.count))) sessionTotalCount = Number(payload.count);
+    updateSessionLogStatus();
+  };
+
+  window.__vapcalcNativeBoxSummary = function __vapcalcNativeBoxSummary(payload) {
+    nativeBoxSummary = payload || null;
+    updateCharts();
+  };
+
+  window.__vapcalcNativeFieldHistory = function __vapcalcNativeFieldHistory(payload) {
+    if (payload?.field && Array.isArray(payload?.values)) {
+      nativeFieldHistory = {
+        ...nativeFieldHistory,
+        [payload.field]: payload.values
+      };
+      return;
+    }
+    if (payload && typeof payload === 'object') {
+      nativeFieldHistory = {
+        temperature: Array.isArray(payload.temperature) ? payload.temperature : [],
+        heatSoak: Array.isArray(payload.heatSoak) ? payload.heatSoak : []
+      };
+    }
+  };
+
+  window.nativeLoadState = function nativeLoadState() {
+    if (window.webkit?.messageHandlers?.vapcalcNative) {
+      sendNativeCommand({
+        cmd: 'loadState',
+        limit: SESSION_PAGE_SIZE,
+        offset: sessionPageOffset,
+        sort: currentSortColumn,
+        direction: currentSortDirection
+      });
+    } else {
+      window.__vapcalcNativeLoad({ page: [], removedPage: [], nativeSessionStore: false });
+    }
+  };
+
+  window.__vapcalcAwaitNativeState = function __vapcalcAwaitNativeState() {
+    if (nativeStateLoaded) return Promise.resolve();
+    return new Promise(resolve => pendingResolvers.push(resolve));
+  };
+
+  document.addEventListener('DOMContentLoaded', () => { window.nativeLoadState(); });
+  window.addEventListener('pagehide', () => saveStateNow());
+  window.addEventListener('beforeunload', () => saveStateNow());
+})();
+
+</script>
+
+</body>
+</html>
