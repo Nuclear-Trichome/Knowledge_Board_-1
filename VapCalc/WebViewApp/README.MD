@@ -5,7 +5,7 @@ clang -fobjc-arc -framework Cocoa -framework WebKit WebViewApp.m -o WebViewApp
 ```
 ./WebViewApp
 ```
-Having bugs? Open an issue and paste the terminal log + "vapcalcneo" console.app logs from launch to exit in the following format, using 3 backticks around each log:
+Having bugs? Open an issue and paste the terminal log + "vapcalcneo" console.app logs from launch to exit in the following format, using 3 backticks before and after each log:
 
 Title: issue description
 
