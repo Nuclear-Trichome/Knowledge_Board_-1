@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>iOS Network Monitor</title>
+<style>
+:root{color-scheme:dark;--bg:#080b14;--panel:#111827;--panel2:#0d1424;--text:#edf2ff;--muted:#94a3b8;--ok:#32d583;--bad:#ff5a67;--warn:#fdb022;--line:#26324a;--accent:#7c9cff}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b1020,#070a12 55%);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{width:min(980px,100%);margin:auto;padding:18px}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.title h1{font-size:22px;margin:0 0 3px}.title p{margin:0;color:var(--muted);font-size:13px}.live{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:12px}.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 5px #32d58320}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:15px;padding:14px;min-height:108px}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.07em}.value{font-weight:750;font-size:22px;margin-top:9px;overflow-wrap:anywhere}.sub{color:var(--muted);font-size:12px;margin-top:5px}.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.controls{display:grid;grid-template-columns:1fr auto auto;gap:9px;margin:12px 0}.controls input,.controls select,.controls button{min-height:44px;border-radius:11px;border:1px solid var(--line);background:#0c1322;color:var(--text);font:inherit}.controls input{padding:0 12px;min-width:0}.controls select{padding:0 10px}.controls button{padding:0 15px;font-weight:700}.controls button:active{transform:translateY(1px)}
+.panel{background:var(--panel2);border:1px solid var(--line);border-radius:15px;overflow:hidden}.panelhead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.panelhead h2{font-size:14px;margin:0}.actions{display:flex;gap:8px}.actions button{border:1px solid var(--line);background:#111a2d;color:var(--text);border-radius:8px;padding:7px 10px}
+.log{height:47vh;min-height:320px;overflow:auto;padding:5px 0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}.row{display:grid;grid-template-columns:170px 95px 1fr;gap:8px;padding:6px 13px;border-bottom:1px solid #1c2639}.row:hover{background:#ffffff05}.time{color:#aebbd2}.tag{font-weight:750}.msg{color:#dce5f7;overflow-wrap:anywhere}.tag.ok{color:var(--ok)}.tag.bad{color:var(--bad)}.tag.warn{color:var(--warn)}.foot{color:var(--muted);font-size:12px;margin-top:10px}.pulse{animation:pulse .8s ease}@keyframes pulse{50%{filter:brightness(1.8)}}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr 110px}.controls button{grid-column:1/-1}.row{grid-template-columns:115px 78px 1fr}.log{height:50vh}.time{font-size:10px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="title"><h1>iOS Network Monitor</h1><p>Reachability, latency, lifecycle interruptions, and connection transitions</p></div>
+    <div class="live"><span class="dot" id="liveDot"></span><span id="clock">--:--:--</span></div>
+  </div>
+
+  <section class="grid">
+    <div class="card"><div class="label">Browser status</div><div class="value" id="browserStatus">--</div><div class="sub">navigator.onLine</div></div>
+    <div class="card"><div class="label">Verified connection</div><div class="value" id="verifiedStatus">Checking</div><div class="sub" id="verifiedSub">HTTP probe</div></div>
+    <div class="card"><div class="label">Ping</div><div class="value" id="pingValue">-- ms</div><div class="sub" id="pingSub">No sample yet</div></div>
+    <div class="card"><div class="label">Connection type</div><div class="value" id="connectionType">Unavailable</div><div class="sub" id="connectionSub">Not exposed by this browser</div></div>
+  </section>
+
+  <div class="controls">
+    <input id="probeUrl" aria-label="Probe URL" value="https://www.apple.com/library/test/success.html" autocapitalize="none" autocomplete="off" spellcheck="false">
+    <select id="interval"><option value="1000">1 sec</option><option value="2000" selected>2 sec</option><option value="5000">5 sec</option><option value="10000">10 sec</option></select>
+    <button id="toggle">Pause monitoring</button>
+  </div>
+
+  <section class="panel">
+    <div class="panelhead"><h2>Timestamped event log</h2><div class="actions"><button id="mark">Add marker</button><button id="export">Export</button><button id="clear">Clear</button></div></div>
+    <div class="log" id="log" role="log" aria-live="polite"></div>
+  </section>
+  <p class="foot">“Verified connection” means the configured HTTP endpoint answered. App switching, Control Center, and locking often collapse into the same page visibility or execution-gap signals; a webpage cannot reliably name which one occurred.</p>
+</main>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const els = Object.fromEntries(['browserStatus','verifiedStatus','verifiedSub','pingValue','pingSub','connectionType','connectionSub','probeUrl','interval','toggle','log','clock','liveDot'].map(id => [id,$(id)]));
+  let running = true, timer = null, probing = false, lastTick = performance.now(), lastVerified = null, seq = 0;
+  const entries = [];
+  const fmt = d => d.toLocaleString(undefined,{hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',fractionalSecondDigits:3});
+  function log(tag,msg,level=''){
+    const e={time:new Date().toISOString(),tag,msg,level}; entries.push(e);
+    const row=document.createElement('div'); row.className='row';
+    row.innerHTML=`<span class="time">${fmt(new Date(e.time))}</span><span class="tag ${level}">${escapeHtml(tag)}</span><span class="msg">${escapeHtml(msg)}</span>`;
+    els.log.prepend(row);
+    if(els.log.children.length>800) els.log.lastChild.remove();
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function setState(el,text,cls=''){el.textContent=text;el.className='value '+cls;el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),850)}
+  function updateBrowser(reason='poll'){
+    const online=navigator.onLine;
+    const next=online?'ONLINE':'OFFLINE';
+    if(els.browserStatus.textContent!==next){setState(els.browserStatus,next,online?'ok':'bad');log('BROWSER',`${next} (${reason})`,online?'ok':'bad');}
+  }
+  function updateConnectionInfo(){
+    const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+    if(!c){setState(els.connectionType,'Unavailable','warn');els.connectionSub.textContent='Network Information API absent';return;}
+    const type=c.type||c.effectiveType||'unknown'; setState(els.connectionType,String(type).toUpperCase(),type==='unknown'?'warn':'');
+    els.connectionSub.textContent=[c.downlink&&`${c.downlink} Mb/s`,c.rtt&&`${c.rtt} ms RTT`,c.saveData?'Save-Data':''].filter(Boolean).join(' | ')||'Limited browser estimate';
+  }
+  async function probe(){
+    if(!running||probing) return; probing=true; const id=++seq; const started=performance.now(); const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),7000);
+    let url=els.probeUrl.value.trim();
+    try{
+      if(!url) throw new Error('Probe URL is empty');
+      const join=url.includes('?')?'&':'?'; url += `${join}_netmon=${Date.now()}_${id}`;
+      await fetch(url,{method:'GET',cache:'no-store',credentials:'omit',mode:'no-cors',redirect:'follow',signal:controller.signal});
+      const ms=Math.round(performance.now()-started); setState(els.pingValue,`${ms} ms`,ms<500?'ok':ms<1500?'warn':'bad'); els.pingSub.textContent=`Sample ${id}`;
+      setVerified(true,`Endpoint answered in ${ms} ms`); log('PING',`${ms} ms`,ms<500?'ok':ms<1500?'warn':'bad');
+    }catch(err){
+      const ms=Math.round(performance.now()-started); setState(els.pingValue,'FAILED','bad'); els.pingSub.textContent=err.name==='AbortError'?'Timed out after 7 s':String(err.message||err);
+      setVerified(false,err.name==='AbortError'?'Probe timeout':String(err.message||err)); log('PING FAIL',`${ms} ms - ${err.name}: ${err.message}`,'bad');
+    }finally{clearTimeout(timeout);probing=false;schedule();}
+  }
+  function setVerified(on,detail){
+    if(lastVerified!==on){setState(els.verifiedStatus,on?'ON':'OFF',on?'ok':'bad');log('TRUE TOGGLE',`${on?'ON':'OFF'} - ${detail}`,on?'ok':'bad');lastVerified=on;}
+    els.verifiedSub.textContent=detail;
+  }
+  function schedule(){clearTimeout(timer);if(running)timer=setTimeout(probe,Number(els.interval.value));}
+  function lifecycle(type,detail,level='warn'){log(type,detail,level);}
+  window.addEventListener('online',()=>{updateBrowser('online event');probe();});
+  window.addEventListener('offline',()=>{updateBrowser('offline event');setVerified(false,'Browser offline event');});
+  document.addEventListener('visibilitychange',()=>lifecycle('VISIBILITY',document.visibilityState,document.hidden?'warn':'ok'));
+  window.addEventListener('pagehide',e=>lifecycle('PAGE HIDE',`persisted=${e.persisted}`,'warn'));
+  window.addEventListener('pageshow',e=>{lifecycle('PAGE SHOW',`persisted=${e.persisted}`,'ok');detectGap();probe();});
+  window.addEventListener('blur',()=>lifecycle('WINDOW BLUR','Possible app switch, Control Center, notification shade, or system overlay'));
+  window.addEventListener('focus',()=>{lifecycle('WINDOW FOCUS','Page regained focus','ok');detectGap();probe();});
+  window.addEventListener('freeze',()=>lifecycle('FREEZE','Page execution frozen'));
+  window.addEventListener('resume',()=>{lifecycle('RESUME','Page execution resumed','ok');detectGap();probe();});
+  function detectGap(){const now=performance.now(),gap=now-lastTick;if(gap>3500) lifecycle('EXECUTION GAP',`${Math.round(gap)} ms - probable suspension, lock, or backgrounding`,'warn');lastTick=now;}
+  setInterval(()=>{detectGap();updateBrowser();$('clock').textContent=new Date().toLocaleTimeString(undefined,{hour12:false});},1000);
+  els.interval.addEventListener('change',()=>{log('SETTING',`Probe interval ${els.interval.options[els.interval.selectedIndex].text}`);schedule();});
+  els.toggle.addEventListener('click',()=>{running=!running;els.toggle.textContent=running?'Pause monitoring':'Resume monitoring';log('MONITOR',running?'Resumed':'Paused',running?'ok':'warn');if(running)probe();else clearTimeout(timer);});
+  $('clear').onclick=()=>{entries.length=0;els.log.innerHTML='';log('LOG','Cleared');};
+  $('mark').onclick=()=>{const text=prompt('Marker text:','Manual observation');if(text)log('MARKER',text,'warn');};
+  $('export').onclick=()=>{const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),userAgent:navigator.userAgent,entries},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`ios-network-log-${Date.now()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;if(c)c.addEventListener?.('change',()=>{updateConnectionInfo();log('CONNECTION','Browser connection estimate changed');});
+  log('START',navigator.userAgent);updateBrowser('initial');updateConnectionInfo();probe();
+})();
+</script>
+</body>
+</html>
