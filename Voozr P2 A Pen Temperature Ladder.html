@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<title>Voozr P2 A Pen Temperature Ladder</title>
+<meta name="Generator" content="Cocoa HTML Writer">
+<style type="text/css">
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 1rem;
+    background: #ffffff;
+    color: #000000;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  .guide-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fafafa;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem 0.75rem;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .guide-toolbar {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    z-index: 1;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .guide-toolbar span {
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+
+  .guide-zoom-btn {
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: #fff;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
+  }
+
+  .guide-zoom-btn:active {
+    transform: scale(0.97);
+  }
+
+  #guide-box {
+    font-size: 100%;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+	/* TRUE TEXT OUTLINE FOR ALL TEMPERATURE LINES (Chrome, Safari, Firefox, Edge) */
+.temp-line {
+  position: relative;
+
+  /* Chrome / Safari / Edge outline */
+  -webkit-text-stroke: 0.1px rgba(0,0,0,0.55);
+
+  /* Firefox-compatible outline */
+  text-shadow:
+    -1px  0px 1px rgba(0,0,0,0.65),
+     1px  0px 1px rgba(0,0,0,0.65),
+     0px -1px 1px rgba(0,0,0,0.65),
+     0px  1px 1px rgba(0,0,0,0.65),
+    -1px -1px 1px rgba(0,0,0,0.65),
+     1px -1px 1px rgba(0,0,0,0.65),
+    -1px  1px 1px rgba(0,0,0,0.65),
+     1px  1px 1px rgba(0,0,0,0.65);
+}
+
+  /* Per-mode radial gradient highlights (center → outer) */
+
+  /* Ultra-low (Hidden Blue) */
+  .mode-ul {
+    background: radial-gradient(circle, #33FFFF 0%, #0000FF 50%, #7F00FF 100%);
+  }
+
+  /* Low (Blue) */
+  .mode-low {
+    background: radial-gradient(circle, #3333FF 0%, #0000FF 50%, #0000CC 100%);
+  }
+
+  /* Medium (Green) */
+  .mode-med {
+    background: radial-gradient(circle, #00FF00 0%, #33FF33 50%, #66FF66 100%);
+  }
+
+  /* High (Red) */
+  .mode-high {
+    background: radial-gradient(circle, #CC0000 0%, #FF0000 50%, #FF6666 100%);
+  }
+
+  /* Peak / Max (White) */
+  .mode-peak {
+    background: radial-gradient(circle, #C0C0C0 0%, #E0E0E0 50%, #FFFFFF 100%);
+  }
+
+  /* Ultra-high (Hidden White) */
+  .mode-uhigh {
+    background: radial-gradient(circle, #99CCFF 0%, #CCFFFF 50%, #FFCCE5 100%);
+  }
+
+  /* Dark mode */
+
+  body.dark {
+    background: #111111;
+    color: #EEEEEE;
+  }
+
+  body.dark .guide-container {
+    background: #181818;
+    border-color: #555555;
+  }
+
+  body.dark .guide-toolbar {
+    background: #181818;
+    border-bottom-color: #555555;
+  }
+
+  body.dark .guide-zoom-btn {
+    background: #222222;
+    color: #EEEEEE;
+    border-color: #666666;
+  }
+
+  body.dark #guide-box {
+    color: #EEEEEE;
+  }
+</style>
+
+<script type="text/javascript">
+(function () {
+  var zoom = 1.0;
+  var minZoom = 0.8;
+  var maxZoom = 1.6;
+  var step = 0.1;
+  var box;
+
+  function applyZoom() {
+    if (!box) {
+      box = document.getElementById('guide-box');
+    }
+    if (!box) return;
+    box.style.fontSize = (zoom * 100) + '%';
+  }
+
+  function applyTheme(theme) {
+    var body = document.body;
+    var btn = document.getElementById('theme-toggle');
+    if (theme === 'dark') {
+      body.classList.add('dark');
+      if (btn) btn.textContent = 'Light';
+    } else {
+      body.classList.remove('dark');
+      if (btn) btn.textContent = 'Dark';
+    }
+  }
+
+  window.guideZoomIn = function () {
+    if (zoom < maxZoom) {
+      zoom = Math.round((zoom + step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  window.guideZoomOut = function () {
+    if (zoom > minZoom) {
+      zoom = Math.round((zoom - step) * 10) / 10;
+      applyZoom();
+    }
+  };
+
+  window.toggleTheme = function () {
+    var next = document.body.classList.contains('dark') ? 'light' : 'dark';
+    localStorage.setItem('p2Theme', next);
+    applyTheme(next);
+  };
+
+  if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', function () {
+      box = document.getElementById('guide-box');
+      applyZoom();
+      var stored = localStorage.getItem('p2Theme') || 'light';
+      applyTheme(stored);
+    }, false);
+  } else {
+    window.attachEvent('onload', function () {
+      box = document.getElementById('guide-box');
+      applyZoom();
+      var stored = localStorage.getItem('p2Theme') || 'light';
+      applyTheme(stored);
+    });
+  }
+})();
+</script>
+</head>
+
+<body>
+<div class="guide-container">
+  <div class="guide-toolbar">
+    <span>Zoom:</span>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomOut()">A-</button>
+    <button type="button" class="guide-zoom-btn" onclick="guideZoomIn()">A+</button>
+    <span style="margin-left:0.75rem;">Mode:</span>
+    <button type="button" id="theme-toggle" class="guide-zoom-btn" onclick="toggleTheme()">Dark</button>
+  </div>
+
+<pre id="guide-box">
+Voozr P2 A Pen - Temperature Ladder (Lowest -> Highest)
+=======================================================
+
+NOTE ON BOOST:
+The P2 A Pen allows one boost per heat cycle.
+Estimated boost increase: ~+22°F, slightly above the Pivot's ~+18°F boost.
+Boosting is also expected to extend the session slightly; exact added time is not confirmed here.
+
+
+=======================================================
+1. LOW (Blue) [Flavor]
+   Optimal flavor, least vapor.
+
+<span class="temp-line mode-low" style="color:#4CF300">Base ............. 500°F</span>
+<span class="temp-line mode-low" style="color:#82EA00">Boost 1x ......... ~522°F</span>
+
+
+=======================================================
+2. MEDIUM (Green) [Balanced]
+   Balanced flavor and vapor.
+
+<span class="temp-line mode-med" style="color:#7EEB00">Base ............. 520°F</span>
+<span class="temp-line mode-med" style="color:#B5E200">Boost 1x ......... ~542°F</span>
+
+
+=======================================================
+3. HIGH (Red) [Strong]
+   Higher vapor, maintains flavor.
+
+<span class="temp-line mode-high" style="color:#B1E300">Base ............. 540°F</span>
+<span class="temp-line mode-high" style="color:#E7DA00">Boost 1x ......... ~562°F</span>
+
+
+=======================================================
+4. LIMIT (White) [Power]
+   Most vapor, less flavor.
+
+<span class="temp-line mode-peak" style="color:#FFC300">Base ............. 585°F</span>
+<span class="temp-line mode-peak" style="color:#FF9F00">Boost 1x ......... ~607°F</span>
+
+
+=======================================================
+Relative Order (Low -> High)
+<span class="temp-line mode-low">1. Blue - Low / Flavor</span>
+<span class="temp-line mode-med">2. Green - Medium / Balanced</span>
+<span class="temp-line mode-high">3. Red - High / Strong</span>
+<span class="temp-line mode-peak">4. White - Limit / Power</span>
+=======================================================
+</pre>
+
+</div>
+</body>
+</html>
