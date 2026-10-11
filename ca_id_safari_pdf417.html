@@ -5,79 +5,60 @@
 <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/iife/reader/index.js" defer></script>
 </head><body>
 <h1>California ID Barcode Checker</h1>
-<p>Scan the PDF417 barcode and then the smaller linear barcode to review age and data consistency. <strong>This does not authenticate an ID or confirm DMV issuance.</strong></p>
+<p>Scan the PDF417 barcode to review age and data consistency. <strong>This does not authenticate an ID or confirm DMV issuance.</strong></p>
 <p class="notice"><strong>Connectivity:</strong> This CDN edition loads the decoder JavaScript and WebAssembly from jsDelivr. An internet connection is needed to load them; camera frames and ID data are processed in the browser, not sent to our server. For strictly offline use, host both decoder files locally. iPhone Safari camera access generally requires HTTPS; opening this file from Files may not grant camera access.</p>
 <section aria-label="Camera scanner"><h2>Live camera (including Safari)</h2>
-<p id="stage" class="notice">Step 1 of 2: Scan the large PDF417 barcode.</p><div><button id="startCamera">Start camera / resume</button><button id="stopCamera" disabled>Stop camera</button><button id="reset">Reset both scans</button></div>
+<p id="stage" class="notice">Scan the PDF417 barcode.</p><div><button id="startCamera">Start camera / resume</button><button id="stopCamera" disabled>Stop camera</button><button id="reset">Reset scan</button></div>
 <video id="preview" autoplay muted playsinline hidden></video><p id="cameraStatus" role="status">Camera is off.</p>
 <label for="imageInput">Or select/take a barcode photo:</label> <input type="file" id="imageInput" accept="image/*" capture="environment"></section>
 <h2>Decoded PDF417 text (optional manual input)</h2><textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Scan with a PDF417 keyboard scanner or paste AAMVA data"></textarea>
-<div><button id="check">Use pasted PDF417 data</button><button id="clear">Clear all</button></div><p><label for="linearRaw">Linear barcode value (optional manual scanner input):</label><input id="linearRaw" type="text" autocomplete="off" spellcheck="false" style="width:100%;box-sizing:border-box" placeholder="Scan 1D barcode with a hardware scanner, or paste decoded value"><button id="linearManual">Use linear barcode value</button></p>
-<div class="result" id="result" role="status">Waiting for PDF417 and linear barcode scans. No age result is shown until both are decoded.</div>
+<div><button id="check">Check pasted PDF417 data</button><button id="clear">Clear all</button></div>
+<div class="result" id="result" role="status">Waiting for PDF417 barcode.</div>
 <p><small>No cookies, localStorage, analytics, scan history, or uploads of barcode images/data. This CDN edition makes network requests to download decoder code. ID barcodes contain sensitive personal information.</small></p>
 <script>
 'use strict';
 // No persistent storage or barcode-data network requests. The ZXing CDN is an external dependency.
 const $=id=>document.getElementById(id), raw=$('raw'), output=$('result'), status=$('cameraStatus'), preview=$('preview');
 const start=$('startCamera'), stop=$('stopCamera'), imageInput=$('imageInput'), stage=$('stage');
-const linearRaw=$('linearRaw');
-let pdf=null, linear=null, stream=null, scanning=false, busy=false, frame=0, lastScan=0, session=0;
+
+let pdf=null, stream=null, scanning=false, busy=false, frame=0, lastScan=0, session=0;
 const canvas=document.createElement('canvas'), ctx=canvas.getContext('2d',{willReadFrequently:true});
 const pdfOptions={formats:['PDF417'],tryHarder:true,maxNumberOfSymbols:1};
-const linearOptions={formats:['Code128','Code39','Code93','Codabar','ITF','EAN13','EAN8','UPCA','UPCE'],tryHarder:true,maxNumberOfSymbols:3};
+
 function todayDate(){const d=new Date();d.setHours(0,0,0,0);return d;}
 function date8(s){if(!/^\d{8}$/.test(s||''))return null;const m=+s.slice(0,2),d=+s.slice(2,4),y=+s.slice(4);const t=new Date(0);t.setFullYear(y,m-1,d);t.setHours(0,0,0,0);return t.getFullYear()===y&&t.getMonth()===m-1&&t.getDate()===d?t:null;}
 function iso(d){return d?[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'):'invalid/missing';}
 function years(d,t){let n=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))n--;return n;}
 function parseAAMVA(input){
- // Scanner libraries can return ASCII RS/GS/CR, LF, or literal escaped separators.
- const text=input.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\r/g,'\n').replace(/\\x1e/gi,'\n').replace(/\\x1d/gi,'\n');
- const header=text.match(/ANSI[ ]*(\d{6})(\d{2})(\d{2})/);
- const fields={};
- const add=(block)=>{
-  // AAMVA field values terminate at CR, LF, RS, GS, or the end of their subfile.
-  for(const line of block.split(/[\r\n\x1e\x1d]+/)){
-   const match=line.match(/^([A-Z]{3})(.*)$/s);
-   if(match&&!Object.prototype.hasOwnProperty.call(fields,match[1]))fields[match[1]]=match[2].trim();
-  }
- };
- // The ANSI header contains N subfile descriptors, each with a 2-char type and 4-digit offset/length.
- // Offsets are byte-oriented; for the ASCII AAMVA payload they also index JS strings.
- if(header){
-  const descriptorsStart=header.index+header[0].length;
-  const count=Number(header[3]);
-  const descriptors=[];
-  for(let i=0;i<Math.min(count,20);i++){
-   const v=text.slice(descriptorsStart+i*10,descriptorsStart+(i+1)*10);
-   if(/^[A-Z0-9]{2}\d{8}$/.test(v))descriptors.push({type:v.slice(0,2),offset:+v.slice(2,6),length:+v.slice(6,10)});
-  }
-  // Most licenses contain a DL subfile; some ID cards contain ID instead.
-  const anchor=text.indexOf('@');
-  for(const d of descriptors){
-   let startAt=(anchor>=0?anchor:0)+d.offset;
-   if(!text.slice(startAt,startAt+2).match(/^(DL|ID)$/)){
-    const candidate=text.indexOf(d.type,descriptorsStart+count*10);
-    if(candidate>=0)startAt=candidate;
-   }
-   const block=text.slice(startAt+(text.slice(startAt,startAt+2)===d.type?2:0),startAt+d.length);
-   add(block);
-  }
+ // Accept actual scanner control characters AND literal <LF>/<CR>/<RS>/<GS> in diagnostics.
+ const text=input.replace(/<(?:LF|CR|RS|GS)>/gi,'\n')
+   .replace(/\\r\\n|\\n|\\r|\\x0a|\\x0d|\\x1e|\\x1d/gi,'\n')
+   .replace(/[\r\n\x1e\x1d]+/g,'\n');
+ const header=text.match(/ANSI\s*(\d{6})(\d{2})(\d{2})/);
+ const fields=Object.create(null);
+ const known=/^(?:DA[A-Z]|DB[A-Z]|DC[A-Z]|DD[A-Z]|ZC[A-Z])$/;
+ function addLine(line){
+  // First field may be attached to DL/ID subfile prefix or ANSI header descriptor.
+  let v=line.trim();
+  if(/^(DL|ID)(?=[A-Z]{3})/.test(v))v=v.slice(2);
+  const m=v.match(/^([A-Z]{3})([\s\S]*)$/);
+  if(m&&known.test(m[1])&&!(m[1] in fields))fields[m[1]]=m[2].trim();
  }
- // Fallback for scanners that strip ANSI headers or report unusual offsets.
- // Locate a DL or ID subfile followed by a known first AAMVA field.
- const subfile=text.match(/(?:^|[\r\n\x1e\x1d]|\d{8})(?:DL|ID)(?=(?:DAQ|DCS|DCA|DBA|DBB|DAC))/);
- if(subfile){const pos=subfile.index+subfile[0].length;add(text.slice(pos));}
- // AAMVA field lines can begin immediately after the subfile designator.
- for(const line of text.split(/[\r\n\x1e\x1d]+/)){
-  const m=line.match(/^([A-Z]{3})(.*)$/s);
-  if(m&&!Object.prototype.hasOwnProperty.call(fields,m[1]))fields[m[1]]=m[2].trim();
+ for(const line of text.split('\n'))addLine(line);
+ // Recover first field when header and subfile descriptor are joined with no newline.
+ const descriptor=text.match(/(?:DL|ID)\d{8}(?:ZC\d{8})?(?:DL|ID)(?=[A-Z]{3})/);
+ if(descriptor)addLine(text.slice(descriptor.index+descriptor[0].length).split('\n')[0]);
+ // Also handle any header with variable number of subfile descriptors.
+ if(header){
+  const count=Number(header[3]);
+  const start=header.index+header[0].length;
+  const after=text.slice(start+count*10);
+  addLine(after.split('\n')[0]);
  }
  return {fields,header:!!header,subfiles:header?Number(header[3]):0};
 }
-function updateStage(){stage.textContent=!pdf?'Step 1 of 2: Scan the large PDF417 barcode.':!linear?'Step 2 of 2: PDF417 captured. Scan the smaller 1D barcode.':'Both barcodes captured. Review the report below.';}
 function report(){
- updateStage();
- if(!pdf||!linear){output.textContent=(pdf?'PDF417 captured. ':'Waiting for PDF417. ')+(linear?'Linear barcode captured. ':'Waiting for linear barcode. ')+'The age report remains hidden until both are available.';return;}
+ if(!pdf){output.textContent='Waiting for PDF417 barcode.';return;}
  const {fields:f,header,subfiles}=parseAAMVA(pdf),issues=[];
  if(!header)issues.push('AAMVA ANSI header not recognized.');
  for(const k of ['DBB','DBA','DBD','DAQ','DCG','DAJ'])if(!f[k])issues.push('Missing expected field: '+k);
@@ -93,17 +74,9 @@ function report(){
  const age=dob&&dob<=today?years(dob,today):null;
  if(age!==null&&age>125)issues.push('Implausible age.');
  if(f.DAQ&&!/^[A-Z]\d{7}$/.test(f.DAQ))issues.push('ID number differs from common CA pattern.');
- const linearValue=linear.text.trim();
- // Do not assume the linear code contains DOB or a DL number; that depends on its symbology/payload.
- const exactMatch=!!f.DAQ&&linearValue===f.DAQ;
- const embeddedMatch=!!f.DAQ&&linearValue.includes(f.DAQ);
- const matchResult=exactMatch?'Linear value equals PDF417 ID number.':embeddedMatch?'Linear value contains PDF417 ID number (partial-format match).':'No defined cross-barcode match: linear barcode may encode unrelated information.';
  output.textContent=[
-  'TWO-PART SCAN COMPLETE',
-  'PDF417: decoded | AAMVA header: '+(header?'recognized':'not recognized')+' | Subfiles: '+subfiles,
-  'Linear: decoded ('+linear.format+') | length: '+linearValue.length+' characters',
-  'Cross-check: '+matchResult,
-  '',
+  'PDF417: decoded | AAMVA header: '+(header?'recognized':'not recognized')+' | Declared subfiles: '+subfiles,
+  'Parsed fields: '+Object.keys(f).join(', '), '',
   'Age: '+(age??'unavailable'),
   '18 or older: '+(age===null?'unknown':age>=18?'YES':'NO'),
   '21 or older: '+(age===null?'unknown':age>=21?'YES':'NO'),
@@ -112,28 +85,25 @@ function report(){
   'Expired: '+(exp?exp<today?'YES':'NO':'unknown'),
   'Jurisdiction: '+(f.DAJ||'missing'),
   '',issues.length?'CHECKS FLAGGED:\n- '+issues.join('\n- '):'Basic PDF417 structure and date consistency checks passed.',
-  '', 'Authenticity: NOT VERIFIED. Neither scan proves DMV issuance.'
+  '', 'Authenticity: NOT VERIFIED. Barcode content alone cannot prove DMV issuance.'
  ].join('\n');
 }
 function stopCamera(message='Camera is off.'){session++;scanning=false;if(frame)cancelAnimationFrame(frame);frame=0;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}preview.pause();preview.srcObject=null;preview.hidden=true;start.disabled=false;stop.disabled=true;status.textContent=message;}
 function decoder(){if(!window.ZXingWASM?.readBarcodes)throw Error('ZXing decoder not loaded. Check CDN access.');return window.ZXingWASM;}
 function accept(items){
- const formatWanted=pdf?linearOptions.formats:pdfOptions.formats;
- const hit=items.find(x=>x.text&&formatWanted.some(f=>f.toLowerCase()===String(x.format).toLowerCase()));
+ const hit=items.find(x=>x.text&&String(x.format).toLowerCase()==='pdf417');
  if(!hit)return false;
- if(!pdf){pdf=hit.text;raw.value=pdf;status.textContent='PDF417 captured. Now scan the linear barcode.';}
- else{linear={text:hit.text,format:hit.format};linearRaw.value=hit.text;stopCamera('Both scans completed. Camera stopped.');}
- report();return true;
+ pdf=hit.text;raw.value=pdf;report();
+ stopCamera('PDF417 decoded and checked. Camera stopped.');return true;
 }
-async function loop(token){if(!scanning||token!==session)return;const now=performance.now();if(!busy&&now-lastScan>280&&preview.readyState>=2&&preview.videoWidth){lastScan=now;busy=true;try{const w=Math.min(preview.videoWidth,1280),h=Math.round(preview.videoHeight*w/preview.videoWidth);canvas.width=w;canvas.height=h;ctx.drawImage(preview,0,0,w,h);const items=await decoder().readBarcodes(ctx.getImageData(0,0,w,h),pdf?linearOptions:pdfOptions);if(token===session)accept(items);}catch(e){if(token===session){stopCamera('Decoder error: '+e.message);return;}}finally{busy=false;}}if(scanning&&token===session)frame=requestAnimationFrame(()=>loop(token));}
-start.addEventListener('click',async()=>{start.disabled=true;status.textContent='Starting camera...';try{decoder();if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera API unavailable; use HTTPS and allow camera access.');const token=++session;const s=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});if(token!==session){s.getTracks().forEach(t=>t.stop());return;}stream=s;preview.srcObject=s;preview.hidden=false;await preview.play();if(token!==session)return;scanning=true;stop.disabled=false;status.textContent=pdf?'Point camera at the smaller 1D barcode.':'Point camera at the large PDF417 barcode.';loop(token);}catch(e){stopCamera('Camera unavailable: '+e.message);}});
+async function loop(token){if(!scanning||token!==session)return;const now=performance.now();if(!busy&&now-lastScan>280&&preview.readyState>=2&&preview.videoWidth){lastScan=now;busy=true;try{const w=Math.min(preview.videoWidth,1280),h=Math.round(preview.videoHeight*w/preview.videoWidth);canvas.width=w;canvas.height=h;ctx.drawImage(preview,0,0,w,h);const items=await decoder().readBarcodes(ctx.getImageData(0,0,w,h),pdfOptions);if(token===session)accept(items);}catch(e){if(token===session){stopCamera('Decoder error: '+e.message);return;}}finally{busy=false;}}if(scanning&&token===session)frame=requestAnimationFrame(()=>loop(token));}
+start.addEventListener('click',async()=>{start.disabled=true;status.textContent='Starting camera...';try{decoder();if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera API unavailable; use HTTPS and allow camera access.');const token=++session;const s=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});if(token!==session){s.getTracks().forEach(t=>t.stop());return;}stream=s;preview.srcObject=s;preview.hidden=false;await preview.play();if(token!==session)return;scanning=true;stop.disabled=false;status.textContent='Point camera at the large PDF417 barcode.';loop(token);}catch(e){stopCamera('Camera unavailable: '+e.message);}});
 stop.addEventListener('click',()=>stopCamera());
-imageInput.addEventListener('change',async()=>{const file=imageInput.files?.[0];if(!file)return;let bitmap;try{decoder();bitmap=await createImageBitmap(file);const scale=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);const items=await decoder().readBarcodes(ctx.getImageData(0,0,canvas.width,canvas.height),pdf?linearOptions:pdfOptions);if(!accept(items))status.textContent='No expected barcode found in photo. Try a sharper, closer photo.';}catch(e){status.textContent='Photo scan failed: '+e.message;}finally{bitmap?.close();imageInput.value='';}});
-function reset(){stopCamera();pdf=null;linear=null;raw.value='';linearRaw.value='';report();}
-$('check').addEventListener('click',()=>{if(!raw.value.trim()){status.textContent='Paste PDF417 text first.';return;}pdf=raw.value;linear=null;linearRaw.value='';report();});
-$('linearManual').addEventListener('click',()=>{if(!linearRaw.value.trim()){status.textContent='Enter the linear barcode value first.';return;}linear={text:linearRaw.value,format:'manual input (unverified symbology)'};report();});
+imageInput.addEventListener('change',async()=>{const file=imageInput.files?.[0];if(!file)return;let bitmap;try{decoder();bitmap=await createImageBitmap(file);const scale=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);const items=await decoder().readBarcodes(ctx.getImageData(0,0,canvas.width,canvas.height),pdfOptions);if(!accept(items))status.textContent='No expected barcode found in photo. Try a sharper, closer photo.';}catch(e){status.textContent='Photo scan failed: '+e.message;}finally{bitmap?.close();imageInput.value='';}});
+function reset(){stopCamera();pdf=null;raw.value='';report();}
+$('check').addEventListener('click',()=>{if(!raw.value.trim()){status.textContent='Paste PDF417 text first.';return;}pdf=raw.value;report();});
 $('clear').addEventListener('click',reset);$('reset').addEventListener('click',reset);
 window.addEventListener('pagehide',()=>stopCamera());
 raw.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.ctrlKey)$('check').click();});
-updateStage();
+report();
 </script></body></html>
