@@ -1,24 +1,23 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CA ID PDF417 Age Checker</title>
-<style>body{font:16px system-ui,sans-serif;max-width:780px;margin:25px auto;padding:0 18px;color:#17212b}textarea{width:100%;height:140px;box-sizing:border-box;font:12px monospace}button,input{font:inherit;margin:6px 6px 6px 0}button{padding:9px 14px}.result{background:#f1f5f9;padding:16px;border-radius:8px;white-space:pre-wrap}small{color:#53616d}video{width:100%;max-height:340px;background:#111;border-radius:8px;object-fit:contain} .notice{border-left:4px solid #b7791f;padding:8px 12px;background:#fff8e6}</style>
+<style>body{font:16px system-ui,sans-serif;max-width:780px;margin:25px auto;padding:0 18px;color:#17212b}textarea{width:100%;height:140px;box-sizing:border-box;font:12px monospace}button,input{font:inherit;margin:6px 6px 6px 0}button{padding:9px 14px}.result{background:#f1f5f9;padding:16px;border-radius:8px;white-space:pre-wrap}small{color:#53616d}video{width:100%;max-height:340px;background:#111;border-radius:8px;object-fit:contain} .notice{border-left:4px solid #b7791f;padding:8px 12px;background:#fff8e6}body{background:var(--page-bg,#fff);color:var(--page-fg,#17212b);transition:background-color .25s,color .25s} .result{background:var(--panel-bg,#f1f5f9);color:var(--page-fg,#17212b)} .notice{background:var(--notice-bg,#fff8e6);border-left-color:var(--accent,#b7791f)} button{background:var(--button-bg,#e8edf2);color:var(--page-fg,#17212b);border:1px solid var(--accent,#9ca3af);border-radius:6px} small{color:var(--muted,#53616d)} body[data-age-theme="blue"]{--page-bg:#dbeafe;--panel-bg:#bfdbfe;--notice-bg:#eff6ff;--accent:#2563eb;--button-bg:#bfdbfe;--page-fg:#172554;--muted:#1e40af} body[data-age-theme="green"]{--page-bg:#dcfce7;--panel-bg:#bbf7d0;--notice-bg:#f0fdf4;--accent:#16a34a;--button-bg:#bbf7d0;--page-fg:#14532d;--muted:#166534} body[data-age-theme="amber"]{--page-bg:#fef3c7;--panel-bg:#fde68a;--notice-bg:#fffbeb;--accent:#d97706;--button-bg:#fde68a;--page-fg:#78350f;--muted:#92400e} body[data-age-theme="red"]{--page-bg:#fee2e2;--panel-bg:#fecaca;--notice-bg:#fff1f2;--accent:#dc2626;--button-bg:#fecaca;--page-fg:#7f1d1d;--muted:#991b1b} </style>
 <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/iife/reader/index.js" defer></script>
 </head><body>
 <h1>California ID Barcode Checker</h1>
-<p>Scan the PDF417 barcode to review age and data consistency. <strong>This does not authenticate an ID or confirm DMV issuance.</strong></p>
+<p>Scan the PDF417 barcode to review age and data consistency. The page changes color based on age (29 and older uses red). <strong>This does not authenticate an ID or confirm DMV issuance.</strong></p>
 <p class="notice"><strong>Connectivity:</strong> This CDN edition loads the decoder JavaScript and WebAssembly from jsDelivr. An internet connection is needed to load them; camera frames and ID data are processed in the browser, not sent to our server. For strictly offline use, host both decoder files locally. iPhone Safari camera access generally requires HTTPS; opening this file from Files may not grant camera access.</p>
 <section aria-label="Camera scanner"><h2>Live camera (including Safari)</h2>
 <p id="stage" class="notice">Scan the PDF417 barcode.</p><div><button id="startCamera">Start camera / resume</button><button id="stopCamera" disabled>Stop camera</button><button id="reset">Reset scan</button></div>
 <video id="preview" autoplay muted playsinline hidden></video><p id="cameraStatus" role="status">Camera is off.</p>
 <label for="imageInput">Or select/take a barcode photo:</label> <input type="file" id="imageInput" accept="image/*" capture="environment"></section>
-<h2>Decoded PDF417 text (optional manual input)</h2><textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Scan with a PDF417 keyboard scanner or paste AAMVA data"></textarea>
-<div><button id="check">Check pasted PDF417 data</button><button id="clear">Clear all</button></div>
+<div><button id="clear">Clear all</button></div>
 <div class="result" id="result" role="status">Waiting for PDF417 barcode.</div>
 <p><small>No cookies, localStorage, analytics, scan history, or uploads of barcode images/data. This CDN edition makes network requests to download decoder code. ID barcodes contain sensitive personal information.</small></p>
 <script>
 'use strict';
 // No persistent storage or barcode-data network requests. The ZXing CDN is an external dependency.
-const $=id=>document.getElementById(id), raw=$('raw'), output=$('result'), status=$('cameraStatus'), preview=$('preview');
+const $=id=>document.getElementById(id), output=$('result'), status=$('cameraStatus'), preview=$('preview');
 const start=$('startCamera'), stop=$('stopCamera'), imageInput=$('imageInput'), stage=$('stage');
 
 let pdf=null, stream=null, scanning=false, busy=false, frame=0, lastScan=0, session=0;
@@ -57,8 +56,9 @@ function parseAAMVA(input){
  }
  return {fields,header:!!header,subfiles:header?Number(header[3]):0};
 }
+function setAgeTheme(age){document.body.dataset.ageTheme=age===null||age<0||age>125?'':age<18?'blue':age<=24?'green':age<=28?'amber':'red';}
 function report(){
- if(!pdf){output.textContent='Waiting for PDF417 barcode.';return;}
+ if(!pdf){setAgeTheme(null);output.textContent='Waiting for PDF417 barcode.';return;}
  const {fields:f,header,subfiles}=parseAAMVA(pdf),issues=[];
  if(!header)issues.push('AAMVA ANSI header not recognized.');
  for(const k of ['DBB','DBA','DBD','DAQ','DCG','DAJ'])if(!f[k])issues.push('Missing expected field: '+k);
@@ -73,6 +73,7 @@ function report(){
  if(exp&&exp<today)issues.push('Card is expired.');
  const age=dob&&dob<=today?years(dob,today):null;
  if(age!==null&&age>125)issues.push('Implausible age.');
+ setAgeTheme(age);
  if(f.DAQ&&!/^[A-Z]\d{7}$/.test(f.DAQ))issues.push('ID number differs from common CA pattern.');
  output.textContent=[
   'PDF417: decoded | AAMVA header: '+(header?'recognized':'not recognized')+' | Declared subfiles: '+subfiles,
@@ -93,17 +94,15 @@ function decoder(){if(!window.ZXingWASM?.readBarcodes)throw Error('ZXing decoder
 function accept(items){
  const hit=items.find(x=>x.text&&String(x.format).toLowerCase()==='pdf417');
  if(!hit)return false;
- pdf=hit.text;raw.value=pdf;report();
+ pdf=hit.text;report();
  stopCamera('PDF417 decoded and checked. Camera stopped.');return true;
 }
 async function loop(token){if(!scanning||token!==session)return;const now=performance.now();if(!busy&&now-lastScan>280&&preview.readyState>=2&&preview.videoWidth){lastScan=now;busy=true;try{const w=Math.min(preview.videoWidth,1280),h=Math.round(preview.videoHeight*w/preview.videoWidth);canvas.width=w;canvas.height=h;ctx.drawImage(preview,0,0,w,h);const items=await decoder().readBarcodes(ctx.getImageData(0,0,w,h),pdfOptions);if(token===session)accept(items);}catch(e){if(token===session){stopCamera('Decoder error: '+e.message);return;}}finally{busy=false;}}if(scanning&&token===session)frame=requestAnimationFrame(()=>loop(token));}
 start.addEventListener('click',async()=>{start.disabled=true;status.textContent='Starting camera...';try{decoder();if(!navigator.mediaDevices?.getUserMedia)throw Error('Camera API unavailable; use HTTPS and allow camera access.');const token=++session;const s=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});if(token!==session){s.getTracks().forEach(t=>t.stop());return;}stream=s;preview.srcObject=s;preview.hidden=false;await preview.play();if(token!==session)return;scanning=true;stop.disabled=false;status.textContent='Point camera at the large PDF417 barcode.';loop(token);}catch(e){stopCamera('Camera unavailable: '+e.message);}});
 stop.addEventListener('click',()=>stopCamera());
 imageInput.addEventListener('change',async()=>{const file=imageInput.files?.[0];if(!file)return;let bitmap;try{decoder();bitmap=await createImageBitmap(file);const scale=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);const items=await decoder().readBarcodes(ctx.getImageData(0,0,canvas.width,canvas.height),pdfOptions);if(!accept(items))status.textContent='No expected barcode found in photo. Try a sharper, closer photo.';}catch(e){status.textContent='Photo scan failed: '+e.message;}finally{bitmap?.close();imageInput.value='';}});
-function reset(){stopCamera();pdf=null;raw.value='';report();}
-$('check').addEventListener('click',()=>{if(!raw.value.trim()){status.textContent='Paste PDF417 text first.';return;}pdf=raw.value;report();});
+function reset(){stopCamera();pdf=null;report();}
 $('clear').addEventListener('click',reset);$('reset').addEventListener('click',reset);
 window.addEventListener('pagehide',()=>stopCamera());
-raw.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.ctrlKey)$('check').click();});
 report();
 </script></body></html>
