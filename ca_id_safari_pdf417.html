@@ -6,7 +6,7 @@
 </head><body>
 <h1>California ID Barcode Checker</h1>
 <p>Scan the PDF417 barcode to review age and data consistency. The page changes color based on age (29 and older uses red). <strong>This does not authenticate an ID or confirm DMV issuance.</strong></p>
-<p class="notice"><strong>Connectivity:</strong> This CDN edition loads the decoder JavaScript and WebAssembly from jsDelivr. An internet connection is needed to load them; camera frames and ID data are processed in the browser, not sent to our server. For strictly offline use, host both decoder files locally. iPhone Safari camera access generally requires HTTPS; opening this file from Files may not grant camera access.</p>
+<p class="notice"><strong>Connectivity:</strong> This CDN edition loads the decoder JavaScript and WebAssembly from jsDelivr. An internet connection is needed to load them; camera frames and ID data are processed in the browser, not sent to any external server.</p>
 <section aria-label="Camera scanner"><h2>Live camera (including Safari)</h2>
 <p id="stage" class="notice">Scan the PDF417 barcode.</p><div><button id="startCamera">Start camera / resume</button><button id="stopCamera" disabled>Stop camera</button><button id="reset">Reset scan</button></div>
 <video id="preview" autoplay muted playsinline hidden></video><p id="cameraStatus" role="status">Camera is off.</p>
