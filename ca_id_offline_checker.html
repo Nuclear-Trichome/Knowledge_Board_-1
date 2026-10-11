@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline CA ID Barcode Checker</title>
+<style>body{font:16px system-ui,sans-serif;max-width:780px;margin:35px auto;padding:0 18px;color:#17212b}textarea{width:100%;height:160px;box-sizing:border-box;font:12px monospace}button,input{font:inherit;margin:6px 6px 6px 0}button{padding:9px 14px} .result{background:#f1f5f9;padding:16px;border-radius:8px;white-space:pre-wrap}small{color:#53616d}code{background:#eee;padding:2px}</style></head><body>
+<h1>Offline California ID Barcode Checker</h1><p>Privacy-first PDF417 data inspection. Nothing is transmitted or saved. This checks formatting and consistency, <strong>not authenticity or DMV issuance</strong>.</p>
+<p><strong>Input:</strong> Use a USB/Bluetooth PDF417 scanner configured as a keyboard, click the box below, then scan. Alternatively paste decoded PDF417 text. Use the camera scanner below if your browser supports native PDF417 decoding; otherwise use a USB/Bluetooth PDF417 scanner.</p>
+<section aria-label="Camera scanner"><h2>Camera PDF417 scanner</h2><p><small>Uses your browser's built-in BarcodeDetector. Works without internet, but PDF417 support varies by browser and device. Camera access may require HTTPS or localhost rather than opening this file directly.</small></p><div><button id="startCamera">Start camera</button><button id="stopCamera" disabled>Stop camera</button></div><video id="preview" autoplay muted playsinline style="display:none;width:100%;max-height:320px;background:#111;border-radius:8px;object-fit:contain"></video><p id="cameraStatus" role="status">Camera is off.</p><label for="imageInput">Or scan a photo of the barcode (if supported):</label> <input type="file" id="imageInput" accept="image/*" capture="environment"></section><h2>Barcode data</h2><textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Scan or paste decoded AAMVA PDF417 barcode text here"></textarea><div><button id="check">Check barcode</button><button id="clear">Clear all</button></div>
+<div class="result" id="result" role="status">Waiting for barcode data.</div>
+<p><small>Works offline as a local file. No network requests, persistence, tracking, or external dependencies. Results are based on the computer's local date. Keep the barcode private; it contains personal information.</small></p>
+<script>
+'use strict';
+// No network, file, storage, or analytics APIs are used.
+const raw = document.getElementById('raw');
+const output = document.getElementById('result');
+function date8(s) {
+  if (!/^\d{8}$/.test(s || '')) return null;
+  // AAMVA date format is MMDDYYYY for US jurisdictions.
+  const m=+s.slice(0,2), d=+s.slice(2,4), y=+s.slice(4,8);
+  const t=new Date(y,m-1,d);
+  return t.getFullYear()===y && t.getMonth()===m-1 && t.getDate()===d ? t : null;
+}
+function iso(d){return d ? [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-') : 'invalid/missing';}
+function years(d,t){let n=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))n--;return n;}
+function parse(text){
+  // Preserve record separators, remove only common scanner suffixes.
+  text=text.replace(/[\r\n]+$/,'');
+  const lines=text.split(/\r\n|\n|\r|\x1e/);
+  const fields={};
+  // AAMVA fields use three-letter keys at line starts. Some scanners prefix ANSI headers.
+  for(const line of lines){const m=line.match(/^([A-Z]{3})(.*)$/);if(m && !Object.hasOwn(fields,m[1]))fields[m[1]]=m[2].trim();}
+  // Some scanners put the first field immediately after the ANSI subfile designator.
+  const start=text.match(/(?:^|ANSI\s*\d{6}\d{2}\d{2}[A-Z]{2}\d{8})(DAQ[^\r\n\x1e]*)/);
+  if(start && !fields.DAQ)fields.DAQ=start[1].slice(3).trim();
+  return {fields,header:/ANSI\s*\d{6}/.test(text),hasDL:/\bDL\b/.test(text)||/ANSI\s*\d{6}\d{4}DL/.test(text)};
+}
+function check(){
+ const text=raw.value; if(!text.trim()){output.textContent='No barcode data entered.';return;}
+ const {fields:f,header}=parse(text), issues=[];
+ if(!header)issues.push('AAMVA ANSI header not recognized (scanner formatting may differ).');
+ for(const key of ['DBB','DBA','DBD','DAQ','DCG'])if(!f[key])issues.push('Missing required/expected field: '+key);
+ const dob=date8(f.DBB),expiry=date8(f.DBA),issued=date8(f.DBD),today=new Date();today.setHours(0,0,0,0);
+ if(f.DBB&&!dob)issues.push('Invalid birth date.');
+ if(f.DBA&&!expiry)issues.push('Invalid expiration date.');
+ if(f.DBD&&!issued)issues.push('Invalid issue date.');
+ if(f.DCG && f.DCG!=='USA')issues.push('Country is not USA.');
+ if(f.DAJ && f.DAJ!=='CA')issues.push('State is not CA.');
+ if(!f.DAJ)issues.push('Missing jurisdiction (DAJ).');
+ if(dob&&dob>today)issues.push('Birth date is in the future.');
+ if(issued&&issued>today)issues.push('Issue date is in the future.');
+ if(issued&&dob&&issued<dob)issues.push('Issue date precedes birth date.');
+ if(expiry&&issued&&expiry<=issued)issues.push('Expiration is not after issue date.');
+ if(expiry&&expiry<today)issues.push('Card is expired.');
+ const age=dob&&dob<=today?years(dob,today):null;
+ if(age!==null&&age>125)issues.push('Implausible age.');
+ // California DL/ID number commonly consists of one letter and seven digits.
+ if(f.DAQ&&!/^[A-Z]\d{7}$/.test(f.DAQ))issues.push('ID number does not match common CA format (1 letter + 7 digits).');
+ const lines=[`Age: ${age===null?'unavailable':age}`,`18 or older: ${age===null?'unknown':age>=18?'YES':'NO'}`,`21 or older: ${age===null?'unknown':age>=21?'YES':'NO'}`,`Date of birth: ${iso(dob)}`,`Expiration: ${iso(expiry)}`,`Expired: ${expiry?expiry<today?'YES':'NO':'unknown'}`,`Jurisdiction: ${f.DAJ||'missing'}`,`AAMVA header: ${header?'recognized':'not recognized'}`,'',issues.length?'CHECKS FLAGGED:\n- '+issues.join('\n- '):'Basic structure and consistency checks passed.','', 'Authenticity: NOT VERIFIED. A forged barcode can pass these checks.'];
+ output.textContent=lines.join('\n');
+}
+// Native, on-device decoding only. No dependencies, uploads, or network requests.
+const preview=document.getElementById('preview');
+const cameraStatus=document.getElementById('cameraStatus');
+const startButton=document.getElementById('startCamera');
+const stopButton=document.getElementById('stopCamera');
+const imageInput=document.getElementById('imageInput');
+let stream=null, detector=null, scanning=false, scanFrame=0, busy=false;
+function stopCamera(){
+ scanning=false;
+ if(scanFrame)cancelAnimationFrame(scanFrame);
+ scanFrame=0;
+ if(stream){for(const track of stream.getTracks())track.stop();stream=null;}
+ preview.srcObject=null;preview.style.display='none';
+ startButton.disabled=false;stopButton.disabled=true;
+ cameraStatus.textContent='Camera is off.';
+}
+async function getDetector(){
+ if(!('BarcodeDetector' in window))throw new Error('This browser has no built-in BarcodeDetector. Try a compatible browser or use a PDF417 hardware scanner.');
+ const supported=await BarcodeDetector.getSupportedFormats();
+ if(!supported.includes('pdf417'))throw new Error('This browser does not support PDF417 decoding. Use a PDF417 hardware scanner or another browser/device.');
+ return new BarcodeDetector({formats:['pdf417']});
+}
+function acceptDetection(found){
+ const item=found.find(x=>x.format==='pdf417'&&x.rawValue);
+ if(!item)return false;
+ raw.value=item.rawValue;
+ check();
+ stopCamera();
+ cameraStatus.textContent='PDF417 barcode decoded locally. Camera stopped automatically.';
+ return true;
+}
+async function scanLoop(){
+ if(!scanning)return;
+ if(!busy&&preview.readyState>=2){
+  busy=true;
+  try{if(acceptDetection(await detector.detect(preview)))return;}
+  catch(e){cameraStatus.textContent='Scan error: '+e.message;stopCamera();return;}
+  finally{busy=false;}
+ }
+ if(scanning)scanFrame=requestAnimationFrame(scanLoop);
+}
+startButton.addEventListener('click',async()=>{
+ startButton.disabled=true;
+ cameraStatus.textContent='Checking PDF417 support...';
+ try{
+  detector=await getDetector();
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera access is unavailable. Try HTTPS or localhost, or use a hardware scanner.');
+  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  preview.srcObject=stream;preview.style.display='block';
+  await preview.play();
+  scanning=true;stopButton.disabled=false;
+  cameraStatus.textContent='Point the camera at the PDF417 barcode on the back of the ID. Hold steady in good light.';
+  scanLoop();
+ }catch(e){stopCamera();cameraStatus.textContent='Camera unavailable: '+e.message;}
+});
+stopButton.addEventListener('click',stopCamera);
+imageInput.addEventListener('change',async()=>{
+ const file=imageInput.files?.[0];if(!file)return;
+ let bitmap;
+ try{
+  const d=await getDetector();
+  bitmap=await createImageBitmap(file);
+  if(!acceptDetection(await d.detect(bitmap)))cameraStatus.textContent='No PDF417 barcode found in the selected image. Try a sharper, closer photo.';
+ }catch(e){cameraStatus.textContent='Image scan unavailable: '+e.message;}
+ finally{if(bitmap)bitmap.close();imageInput.value='';}
+});
+window.addEventListener('pagehide',stopCamera);
+document.getElementById('check').addEventListener('click',check);
+document.getElementById('clear').addEventListener('click',()=>{stopCamera();raw.value='';output.textContent='Cleared. No data retained.';raw.focus();});
+raw.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.ctrlKey)check();});
+</script></body></html>
